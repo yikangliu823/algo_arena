@@ -96,3 +96,16 @@ No High findings left that can be fixed and verified here. Remaining Medium and 
 - CI on `verify/firebase-round3` at 7e7ce47: all 5 jobs green on Node 22, including the new i6-emulator and
   coach-wiring-emulator jobs: https://github.com/yikangliu823/algo_arena/actions/runs/41008562398.
 - Still NOT RUN: I4 timing, load, I5, I7, C5, C6, and the deploy of the coach function (needs Blaze and the secret).
+
+## Go-live, M4 to M5 (2026-10-29)
+- Site published from `verify/firebase-round3` to GitHub Pages (algo_arena made public at the user's request).
+- Defect 1, found on the live site: redirect sign-in returned with no user and no error. Cause: the page is on
+  github.io and the auth helper on firebaseapp.com; Chrome 115+, Firefox 109+ and Safari 16.1+ block that third-party
+  storage (Firebase redirect best practices). Fix (user decision): popup only, with a plain message when the popup is
+  blocked. Mock e2e check added (44/44).
+- Defect 2, found in the live site's console: the server-clock probe used `data/users/<uid>/clock/probe`, an odd-length
+  document path, so every estimate failed and devices unlocked by their own clock. A device clock running fast would
+  unlock before the server opens answers and have its taps refused (I4). Same path in verify/staging/driver.mjs.
+  Fixed to `data/users/<uid>/clock`. Why the tests missed it: the mock accepted any path; it now refuses odd document
+  paths like the SDK (and returns real auto ids). The I6 oracle (real SDK, emulator) now fails on a clock-estimate
+  warning: 3 failures with the old code, 0 with the fix.

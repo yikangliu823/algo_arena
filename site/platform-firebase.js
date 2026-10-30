@@ -42,7 +42,7 @@ const boot = () => (ready = ready || init());
 
 // Display only (countdowns); scoring uses server timestamps written by Firestore.
 async function estimateServerOffset() {
-  const { fsM, fdb } = F; const ref = fsM.doc(fdb, `data/users/${F.user.uid}/clock/probe`); let best = null;
+  const { fsM, fdb } = F; const ref = fsM.doc(fdb, `data/users/${F.user.uid}/clock`); let best = null;
   for (let k = 0; k < 3; k++) {
     const t0 = Date.now(); await fsM.setDoc(ref, { t: fsM.serverTimestamp() });
     const s = await fsM.getDocFromServer(ref); const t1 = Date.now();

@@ -152,7 +152,12 @@ export function getFirestore() { return { kind: "firestore" }; }
  * @param {string=} path
  * @return {{kind: string, path: string, id: string}}
  */
-export function doc(db, path) { if (db && db.kind === "col") return { kind: "doc", path: db.path + "/" + Math.random().toString(36).slice(2, 12), id: "x" }; return { kind: "doc", path, id: segs(path).at(-1) }; }
+export function doc(db, path) {
+  if (db && db.kind === "col") { const id = Math.random().toString(36).slice(2, 12); return { kind: "doc", path: db.path + "/" + id, id }; }
+  // The real SDK refuses odd-length document paths; a mock that accepted them hid a broken path in round 3.
+  if (segs(path).length % 2) throw new Error(`Invalid document reference. Document references must have an even number of segments, but ${path} has ${segs(path).length}.`);
+  return { kind: "doc", path, id: segs(path).at(-1) };
+}
 /**
  * @param {!Object} db
  * @param {string} path

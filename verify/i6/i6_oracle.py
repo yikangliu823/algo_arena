@@ -256,7 +256,7 @@ def main():
         pages = {}
         for u in UIDS:
             page = browser.new_context(viewport={"width": 1280, "height": 900}).new_page()
-            page.on("console", lambda m, u=u: m.type == "error" and console_errors.append(f"{u}: {m.text}"))
+            page.on("console", lambda m, u=u: m.type in ("error", "warning") and console_errors.append(f"{u}: {m.text}"))
             page.goto(f"http://127.0.0.1:{PORT}/www/app.html?u={u}")
             pages[u] = page
         sid, plan, export = run_game(pages, questions)
@@ -275,10 +275,12 @@ def main():
         "links_opened_in_browser": links_opened,
         "page_errors": page_errors,
         "console_errors": console_errors[:20],
+        # Scoring does not use it, but players unlock by it: a failed estimate lets a fast clock unlock too early.
+        "server_clock_estimate_failures": [c for c in console_errors if "Server clock estimate failed" in c],
     }
     OUT.mkdir(parents=True, exist_ok=True)
     (OUT / ("result-control.json" if CONTROL else "result.json")).write_text(json.dumps(result, indent=2), encoding="utf-8")
-    ok = not result["missing"] and not result["unexpected_or_duplicate"]
+    ok = not result["missing"] and not result["unexpected_or_duplicate"] and not result["server_clock_estimate_failures"]
     print(json.dumps({k: v for k, v in result.items() if k != "plan"}, indent=2))
     print("I6", "PASS" if ok else "FAIL", f'{result["recorded_exactly_once"]}/{len(plan)} planned clicks recorded exactly once')
     return 0 if ok else 1

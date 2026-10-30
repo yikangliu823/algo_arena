@@ -50,7 +50,7 @@ async function client(uid) {
   await signInWithCustomToken(getAuth(app), await adminAuth().createCustomToken(uid));
   const db = getFirestore(app);
   // Same server-offset estimate as site/platform-firebase.js: lowest-RTT of 3 write-then-read round trips.
-  const ref = doc(db, `data/users/${uid}/clock/probe`); let best = null;
+  const ref = doc(db, `data/users/${uid}/clock`); let best = null;
   for (let k = 0; k < 3; k++) {
     const t0 = Date.now(); await setDoc(ref, { t: serverTimestamp() }); const s = await getDocFromServer(ref); const t1 = Date.now();
     const rtt = t1 - t0; const off = s.data().t.toMillis() - (t0 + t1) / 2; if (!best || rtt < best.rtt) best = { rtt, off };
