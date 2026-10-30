@@ -361,12 +361,13 @@ The host controls classroom pacing.
 Recommended flow:
 
 1. Host presents question.
-2. Participants answer while timer runs.
-3. All responses are collected or time expires.
-4. Answer distribution is shown.
-5. Correct answer and explanation are revealed.
-6. Reference materials may be shown.
-7. Host selects **Next**.
+2. Reading phase: the question and its options are visible, but answering is locked for the reading time. The default reading time is 5 seconds; the host may set 0 to 60 seconds when launching (0 opens answers at once) and may open answers early. Response time and points count from the moment answers open.
+3. Participants answer while timer runs.
+4. All responses are collected or time expires.
+5. Answer distribution is shown.
+6. Correct answer and explanation are revealed.
+7. Reference materials may be shown.
+8. Host selects **Next**.
 
 Participants must not receive the correct answer before the reveal stage.
 
@@ -525,7 +526,7 @@ Suggested fields:
 - start timestamp
 - end timestamp
 - participant count
-- timer configuration
+- timer configuration (answer time and reading time)
 - scoring configuration
 
 ### 13.6 Event Logging
