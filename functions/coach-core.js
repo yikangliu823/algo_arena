@@ -23,8 +23,8 @@ export const DEFAULTS = Object.freeze({
   maxPromptChars: 24000,
   maxTokens: 1200,
   timeoutMs: 60000,
-  // Hosts: each ended session allows 2 x participants + 1 successful calls (one report per player, one rewrite when a
-  // report runs long, one class summary). hostDailyCap is only a guard against abuse across sessions.
+  // Hosts get 2 x participants + 1 calls per ended session (a report per player, a rewrite when one runs long, a class
+  // summary); hostDailyCap only guards against abuse across sessions.
   hostDailyCap: 250,
   participantDailyCap: 3,
   system:
@@ -34,23 +34,10 @@ export const DEFAULTS = Object.freeze({
     '{"error":"out_of_scope"} and nothing else.',
 });
 
-/* Structured output: for report requests the model must call one tool whose input is the report, so the reply is
-   always a JSON object with these keys. The schemas live on the server; the page only names the kind. */
-/**
- * Builds the JSON schema of a bounded list of short strings.
- *
- * @param {number} n Maximum number of items.
- * @param {number} w Word limit stated in each item's description (advisory to the model, not enforced).
- * @return {!Object} A JSON schema object of type "array".
- */
 const list = (n, w) => ({ type: "array", maxItems: n, items: { type: "string", description: `at most ${w} words` } });
-/**
- * Builds a closed JSON object schema in which every listed property is required.
- *
- * @param {!Object<string, !Object>} props Property schemas keyed by property name.
- * @return {!Object} A JSON schema object with additionalProperties false.
- */
 const obj = (props) => ({ type: "object", additionalProperties: false, required: Object.keys(props), properties: props });
+// Report kinds force one tool call, so the reply is always a JSON object with these keys. The schemas stay on the
+// server and the page only names the kind; word limits are advice to the model, not enforced.
 export const SCHEMAS = Object.freeze({
   personal: { name: "learning_report", description: "Return the student's learning report.", input_schema: obj({
     performance_summary: { type: "string", description: "at most 50 words" }, knowledge_points: list(3, 18), weak_or_risky_areas: list(3, 18),
@@ -60,28 +47,28 @@ export const SCHEMAS = Object.freeze({
     possible_confusion_signals: list(4, 25), instructor_review_areas: list(4, 25) }) },
 });
 
-/** An expected refusal or failure, carrying a page error code that functions/index.js maps to an HTTPS error. */
+/** An expected refusal or failure; functions/index.js maps its code to an HTTPS error. */
 export class CoachError extends Error {
   /**
    * @param {string} code Page error code, for example "quota_exceeded".
-   * @param {string} message Human-readable message the page can show.
+   * @param {string} message Shown to the user by the page.
    */
   constructor(code, message) { super(message); this.name = "CoachError"; this.code = code; }
 }
 
 /**
- * Returns the UTC calendar date of a timestamp, used to key the daily quota counters.
+ * Keys the daily quota counters.
  *
- * @param {number} ms Unix epoch milliseconds.
- * @return {string} The date as YYYY-MM-DD.
+ * @param {number} ms Epoch milliseconds.
+ * @return {string} The UTC date as YYYY-MM-DD.
  */
 export const dayKey = (ms) => new Date(ms).toISOString().slice(0, 10);
 
 /**
- * Hashes a string with SHA-256 using Web Crypto, so the call log can identify a prompt without storing it.
+ * Lets the call log identify a prompt without storing it.
  *
- * @param {string} s Text to hash (UTF-8 encoded).
- * @return {!Promise<string>} The digest as 64 lowercase hex characters.
+ * @param {string} s
+ * @return {!Promise<string>} The SHA-256 digest as 64 lowercase hex characters.
  */
 export async function sha256hex(s) {
   const d = await globalThis.crypto.subtle.digest("SHA-256", new TextEncoder().encode(s));
@@ -89,14 +76,11 @@ export async function sha256hex(s) {
 }
 
 /**
- * Validates and normalizes the callable request's data before any quota is used.
- *
- * @param {*} data The request data sent by the page: {prompt, tier?, sid?, kind?}.
- * @param {!Object=} cfg Configuration; defaults to DEFAULTS.
- * @return {{prompt: string, tier: string, sid: ?string, kind: ?string}} The validated fields; tier defaults to
- *     "default", sid and kind to null.
- * @throws {!CoachError} invalid_argument when the prompt is missing, blank or too long, the tier or kind is unknown,
- *     or the session id is not 1 to 100 characters of [A-Za-z0-9_-].
+ * @param {*} data The page's request data: {prompt, tier?, sid?, kind?}.
+ * @param {!Object=} cfg
+ * @return {{prompt: string, tier: string, sid: ?string, kind: ?string}} tier defaults to "default", sid and kind to
+ *     null.
+ * @throws {!CoachError} invalid_argument.
  */
 export function validateInput(data, cfg = DEFAULTS) {
   const prompt = data && data.prompt;
@@ -112,19 +96,14 @@ export function validateInput(data, cfg = DEFAULTS) {
 }
 
 /**
- * Returns a host's AI call allowance for one session: one report per player, one rewrite per player, one class summary.
- *
- * @param {number} participants Number of players in the session (negative values count as 0).
- * @return {number} 2 x participants + 1.
+ * @param {number} participants
+ * @return {number} A host's AI call allowance for one session.
  */
 export const sessionCap = (participants) => 2 * Math.max(0, participants) + 1;
 
 /**
- * Maps an Anthropic API HTTP error status to a page error code and says whether the quota unit is returned.
- *
- * @param {number} status HTTP status of a failed response.
- * @return {{code: string, refund: boolean, msg: string}} Page error code, refund flag (currently true for every
- *     status), and a message for the page.
+ * @param {number} status HTTP status of a failed Anthropic API response.
+ * @return {{code: string, refund: boolean, msg: string}} refund is currently true for every status.
  */
 export function mapStatus(status) {
   // 429 and 529 mean the request was not processed, so the page may retry them without spending tokens.
@@ -135,24 +114,13 @@ export function mapStatus(status) {
 }
 
 /**
- * Handles one coach request end to end: authorization, quota, the Anthropic call, and the call log.
+ * Hosts must name one of their own ended sessions; players must be listed in the host's record of a session at most
+ * 3 days old. A failed or empty upstream call returns its quota unit.
  *
- * Hosts must name one of their own ended sessions and are limited per session and per day; players must be listed
- * in the host's record of a session less than 3 days old and are limited per day. A failed or empty upstream call
- * returns its quota unit. The log stores sizes and a prompt hash, never the prompt or the reply.
- *
- * deps: {
- *   now(): ms, fetch(url, init), apiKey(): string,
- *   isHost(uid): Promise<bool>, hostSession(uid, sid): Promise<{ended, participants} | null>,
- *   hasJoined(uid): Promise<{sid} | false>,
- *   consumeQuota({uid, day, dailyCap, sid, sessionCap}): Promise<{ok, limit?}>, refundQuota(same): Promise,
- *   log(entry): Promise
- * }
- *
- * @param {{uid: ?string, data: *, deps: !Object, cfg: (!Object|undefined)}} request The caller's uid (null when
- *     signed out), the request data, the dependencies above, and an optional configuration (defaults to DEFAULTS).
- * @return {!Promise<{text: string, truncated: boolean, modelApplied: string, modelTierApplied: string}>} The reply
- *     text (for report kinds, the forced tool's input as JSON), whether it stopped at max_tokens, and the model used.
+ * @param {{uid: ?string, data: *, deps: !Object, cfg: (!Object|undefined)}} request deps is built by firestoreDeps
+ *     (deps.js); uid is null when signed out.
+ * @return {!Promise<{text: string, truncated: boolean, modelApplied: string, modelTierApplied: string}>} For report
+ *     kinds, text is the forced tool's input as JSON.
  * @throws {!CoachError} With one of the error codes listed in the file overview.
  */
 export async function runCoach({ uid, data, deps, cfg = DEFAULTS }) {

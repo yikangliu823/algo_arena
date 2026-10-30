@@ -261,111 +261,25 @@ const DEFAULT_READ = 10; // v2.1: seconds the question is visible, locked, befor
 const MAX_EVENTS = 400;
 
 /* ---------- small utilities ---------- */
-/**
- * Returns the first element matching a CSS selector.
- *
- * @param {string} s CSS selector.
- * @param {!ParentNode=} r Root to search; defaults to document.
- * @return {?Element} The first match, or null.
- */
 const $ = (s, r = document) => r.querySelector(s);
-/**
- * Returns every element matching a CSS selector as a real array.
- *
- * @param {string} s CSS selector.
- * @param {!ParentNode=} r Root to search; defaults to document.
- * @return {!Array<!Element>} All matches in document order.
- */
 const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
-/**
- * Escapes a value for safe insertion into HTML text or attributes.
- *
- * Replaces & < > " and ' with entities; null and undefined become an empty string.
- *
- * @param {*} s Value to escape (stringified).
- * @return {string} The HTML-escaped string.
- */
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-/**
- * Returns the current time.
- *
- * @return {number} Milliseconds since the Unix epoch.
- */
 const now = () => Date.now();
-/**
- * Waits for the given number of milliseconds.
- *
- * @param {number} ms Delay in milliseconds.
- * @return {!Promise<void>} Resolves after the delay.
- */
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-/**
- * Clamps a number to an inclusive range.
- *
- * @param {number} x Value to clamp.
- * @param {number} a Lower bound.
- * @param {number} b Upper bound.
- * @return {number} x limited to [a, b].
- */
 const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
-/**
- * Returns a random lowercase identifier from crypto.getRandomValues.
- *
- * The alphabet omits easily confused characters (l, 0, 1).
- *
- * @param {number=} n Length; defaults to 12.
- * @return {string} The random identifier.
- */
 function rid(n = 12) {
   const a = "abcdefghijkmnopqrstuvwxyz23456789"; const b = crypto.getRandomValues(new Uint8Array(n));
   let s = ""; for (const x of b) s += a[x % a.length]; return s;
 }
-/**
- * Returns a random six-character uppercase room code.
- *
- * The alphabet omits I, O, 0 and 1 so codes are easy to read aloud.
- *
- * @return {string} The room code.
- */
+/** Alphabet drops I, O, 0 and 1 so codes are easy to read aloud and type. */
 function roomCode() {
   const a = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; const b = crypto.getRandomValues(new Uint8Array(6));
   let s = ""; for (const x of b) s += a[x % a.length]; return s;
 }
-/**
- * Returns the median of a list of numbers.
- *
- * @param {!Array<number>} xs Values; not modified.
- * @return {?number} The median (mean of the two middle values for even length), or null when empty.
- */
 const median = (xs) => { if (!xs.length) return null; const s = [...xs].sort((a, b) => a - b); const m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
-/**
- * Returns the arithmetic mean of a list of numbers.
- *
- * @param {!Array<number>} xs Values.
- * @return {?number} The mean, or null when empty.
- */
 const mean = (xs) => xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null;
-/**
- * Formats a duration in milliseconds as seconds with one decimal.
- *
- * @param {?number} ms Duration in milliseconds.
- * @return {string} For example "2.3 s", or an en dash when null.
- */
 const fmtS = (ms) => ms == null ? "–" : (ms / 1000).toFixed(1) + " s";
-/**
- * Formats a ratio as a rounded percentage.
- *
- * @param {number} a Numerator.
- * @param {number} b Denominator.
- * @return {string} For example "75%", or an en dash when b is zero.
- */
 const pct = (a, b) => b ? Math.round((100 * a) / b) + "%" : "–";
-/**
- * Formats a timestamp as a medium date with a short time in the user's locale.
- *
- * @param {?number} t Milliseconds since the epoch.
- * @return {string} The formatted date, or an en dash when falsy.
- */
 const fmtDate = (t) => t ? new Date(t).toLocaleString([], { dateStyle: "medium", timeStyle: "short" }) : "–";
 const LETTERS = ["A", "B", "C", "D"];
 const GLYPH = [
@@ -374,89 +288,26 @@ const GLYPH = [
   '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 2h6v7h7v6h-7v7H9v-7H2V9h7z"/></svg>',
   '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3h18v5H3zM3 9.5h11v5H3zM3 16h18v5H3z"/></svg>',
 ];
-/**
- * Counts the words in a Markdown string.
- *
- * Link syntax is reduced to its label and Markdown punctuation is removed; a word must contain a letter or digit.
- *
- * @param {string} md Markdown text.
- * @return {number} The word count.
- */
 function words(md) { return md.replace(/\[([^\]]*)\]\([^)]*\)/g, "$1").replace(/[#*_>`|-]/g, " ").split(/\s+/).filter((w) => /[A-Za-z0-9]/.test(w)).length; }
-/**
- * Computes the SHA-256 digest of a string.
- *
- * @param {string} s Input, encoded as UTF-8.
- * @return {!Promise<string>} The lowercase hex digest.
- */
 async function sha256hex(s) { const d = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s)); return Array.from(new Uint8Array(d)).map((b) => b.toString(16).padStart(2, "0")).join(""); }
-/**
- * Reads a localStorage value, tolerating blocked storage.
- *
- * @param {string} k Key.
- * @param {?string} d Default when the key is missing or storage throws.
- * @return {?string} The stored value or the default.
- */
 function lsGet(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : v; } catch { return d; } }
-/**
- * Writes a localStorage value, silently ignoring storage errors.
- *
- * @param {string} k Key.
- * @param {string} v Value.
- */
 function lsSet(k, v) { try { localStorage.setItem(k, v); } catch {} }
 
 /* ---------- base64 + hybrid encryption (RSA-OAEP wraps AES-GCM) ---------- */
-/**
- * Encodes binary data as base64.
- *
- * Converts in 32 KiB chunks so large buffers do not overflow String.fromCharCode arguments.
- *
- * @param {!ArrayBuffer|!Uint8Array} buf Bytes to encode.
- * @return {string} The base64 string.
- */
+/** Converts in 32 KiB chunks to stay under the engine's argument-count limit for String.fromCharCode.apply on large buffers. */
 function b64(buf) { const u = new Uint8Array(buf); let s = ""; for (let i = 0; i < u.length; i += 0x8000) s += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000)); return btoa(s); }
-/**
- * Decodes a base64 string into bytes.
- *
- * @param {string} s Base64 string.
- * @return {!Uint8Array} The decoded bytes.
- */
 function unb64(s) { const b = atob(s); const u = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); return u; }
 const RSA = { name: "RSA-OAEP", hash: "SHA-256" };
-/**
- * Generates a 2048-bit RSA-OAEP (SHA-256) key pair for sealing answers.
- *
- * @return {!Promise<{pub: !Object, priv: !Object}>} The public and private keys as JWK objects.
- */
 async function genKeyPair() {
   const kp = await crypto.subtle.generateKey({ ...RSA, modulusLength: 2048, publicExponent: new Uint8Array([1, 0, 1]) }, true, ["encrypt", "decrypt"]);
   return { pub: await crypto.subtle.exportKey("jwk", kp.publicKey), priv: await crypto.subtle.exportKey("jwk", kp.privateKey) };
 }
 const keyCache = new Map();
-/**
- * Imports an RSA-OAEP JWK as a CryptoKey for one operation, memoized in keyCache.
- *
- * The cache key is the use plus the first 40 characters of the modulus.
- *
- * @param {!Object} jwk RSA key in JWK form.
- * @param {string} use Either "encrypt" or "decrypt".
- * @return {!Promise<!CryptoKey>} The non-extractable imported key.
- */
 async function importKey(jwk, use) {
   const k = use + ":" + jwk.n.slice(0, 40);
   if (!keyCache.has(k)) keyCache.set(k, await crypto.subtle.importKey("jwk", { ...jwk, key_ops: [use], alg: "RSA-OAEP-256" }, RSA, false, [use]));
   return keyCache.get(k);
 }
-/**
- * Encrypts an object for the holder of an RSA private key (hybrid encryption).
- *
- * The JSON is encrypted with a fresh AES-256-GCM key and random 12-byte IV; the AES key is wrapped with RSA-OAEP.
- *
- * @param {!Object} pubJwk Recipient public key as JWK.
- * @param {*} obj JSON-serializable value to seal.
- * @return {!Promise<{k: string, iv: string, c: string}>} Base64 wrapped key, IV and ciphertext.
- */
 async function seal(pubJwk, obj) {
   const aes = await crypto.subtle.generateKey({ name: "AES-GCM", length: 256 }, true, ["encrypt"]);
   const iv = crypto.getRandomValues(new Uint8Array(12));
@@ -465,13 +316,6 @@ async function seal(pubJwk, obj) {
   const k = await crypto.subtle.encrypt(RSA, await importKey(pubJwk, "encrypt"), raw);
   return { k: b64(k), iv: b64(iv), c: b64(c) };
 }
-/**
- * Decrypts a sealed payload produced by seal().
- *
- * @param {!Object} privJwk Private key as JWK.
- * @param {{k: string, iv: string, c: string}|string} s Sealed payload, or its JSON string (route B stores sealed answers as strings).
- * @return {!Promise<*>} The original parsed JSON value.
- */
 async function unseal(privJwk, s) {
   if (typeof s === "string") s = JSON.parse(s); // route B stores sealed answers as strings
   const raw = await crypto.subtle.decrypt(RSA, await importKey(privJwk, "decrypt"), unb64(s.k));
@@ -482,21 +326,7 @@ async function unseal(privJwk, s) {
 
 /* ---------- ZIP (store) + CSV ---------- */
 const CRC = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
-/**
- * Computes the CRC-32 checksum used by ZIP entries, via the precomputed CRC table.
- *
- * @param {!Uint8Array} u Bytes to checksum.
- * @return {number} The unsigned 32-bit CRC.
- */
 function crc32(u) { let c = 0xffffffff; for (let i = 0; i < u.length; i++) c = CRC[(c ^ u[i]) & 0xff] ^ (c >>> 8); return (c ^ 0xffffffff) >>> 0; }
-/**
- * Builds an uncompressed (stored) ZIP archive in memory.
- *
- * Writes a local header per file, a central directory and an end record; names are flagged UTF-8.
- *
- * @param {!Array<{name: string, data: (string|!Uint8Array)}>} files Entries; string data is UTF-8 encoded.
- * @return {!Blob} The archive with type application/zip.
- */
 function makeZip(files) {
   const enc = new TextEncoder(); const parts = []; const central = []; let off = 0;
   for (const f of files) {
@@ -518,50 +348,18 @@ function makeZip(files) {
   e.setUint32(0, 0x06054b50, true); e.setUint16(8, files.length, true); e.setUint16(10, files.length, true); e.setUint32(12, cs, true); e.setUint32(16, off, true);
   return new Blob([...parts, ...central, new Uint8Array(e.buffer)], { type: "application/zip" });
 }
-/**
- * Serializes rows to CSV with a header line and CRLF line endings.
- *
- * @param {!Array<!Object>} rows Records to write.
- * @param {!Array<string>} cols Column keys, in output order.
- * @return {string} The CSV text, ending in CRLF.
- */
 function csv(rows, cols) {
-  /**
-   * Quotes one CSV cell value.
-   *
-   * Null becomes empty; objects are JSON-encoded; values containing quotes, commas or newlines are quoted with doubled quotes.
-   *
-   * @param {*} v Cell value.
-   * @return {string} The CSV-safe cell text.
-   */
   const q = (v) => { if (v == null) return ""; const s = typeof v === "object" ? JSON.stringify(v) : String(v); return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
   return [cols.join(","), ...rows.map((r) => cols.map((c) => q(r[c])).join(","))].join("\r\n") + "\r\n";
 }
-/**
- * Makes a string safe to use as a download file name.
- *
- * @param {*} s Proposed name; falsy becomes "file".
- * @return {string} The name with unsafe character runs replaced by underscores, at most 80 characters.
- */
 const safeName = (s) => String(s || "file").replace(/[^\w\- .()]+/g, "_").slice(0, 80);
 
 /* ---------- tiny markdown renderer (headings, lists, bold, italics, links) ---------- */
-/**
- * Renders inline Markdown (bold, italics, http(s) links) as HTML after escaping the text.
- *
- * @param {string} s Markdown text for one line.
- * @return {string} HTML; links open in a new tab with rel noopener.
- */
+/** Escapes first and then inserts only fixed tags, with hrefs limited to http(s), so the result is safe to assign as innerHTML. */
 function mdInline(s) {
   return esc(s).replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>").replace(/(^|[^*])\*([^*\n]+)\*/g, "$1<i>$2</i>")
     .replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
 }
-/**
- * Renders a small Markdown subset to HTML: h1 to h3 headings, - or * bullet lists and paragraphs.
- *
- * @param {?string} md Markdown text.
- * @return {string} The HTML string; blank lines are dropped.
- */
 function mdToHtml(md) {
   const out = []; let list = false;
   for (const line of String(md || "").split(/\r?\n/)) {
@@ -578,29 +376,10 @@ function mdToHtml(md) {
 }
 
 /* ---------- tolerant JS-literal parser (reads QUESTION_BANK from the original index.html) ---------- */
-/**
- * Parses a JavaScript object or array literal from source text without eval.
- *
- * Supports comments, quoted and bare keys, strings with escapes, numbers, true/false/null/undefined and string
- * concatenation with +; used to read QUESTION_BANK from an original index.html.
- *
- * @param {string} src Source text.
- * @param {number} i0 Index where the literal starts.
- * @return {*} The parsed value.
- * @throws {Error} On syntax it does not support, including template expressions.
- */
+/** Reads a JS object or array literal without eval, so QUESTION_BANK can be loaded from an uploaded original index.html; template expressions are rejected. */
 function parseJsLiteral(src, i0) {
   let i = i0;
-  /**
-   * Advances the parser index past whitespace and line or block comments.
-   */
   const ws = () => { for (;;) { while (i < src.length && /\s/.test(src[i])) i++; if (src.startsWith("//", i)) { while (i < src.length && src[i] !== "\n") i++; } else if (src.startsWith("/*", i)) { const j = src.indexOf("*/", i + 2); i = j < 0 ? src.length : j + 2; } else break; } };
-  /**
-   * Reads a quoted string literal at the current index, decoding escape sequences.
-   *
-   * @return {string} The decoded string.
-   * @throws {Error} When a template literal contains an expression.
-   */
   const str = () => {
     const q = src[i++]; let s = "";
     while (i < src.length && src[i] !== q) {
@@ -613,12 +392,6 @@ function parseJsLiteral(src, i0) {
     }
     i++; return s;
   };
-  /**
-   * Reads one value (array, object, string, number or keyword) at the current index.
-   *
-   * @return {*} The parsed value.
-   * @throws {Error} On a bad key, missing colon or unexpected token.
-   */
   const val = () => {
     ws(); const c = src[i];
     if (c === "[") { i++; const a = []; for (;;) { ws(); if (src[i] === "]") { i++; return a; } a.push(expr()); ws(); if (src[i] === ",") i++; } }
@@ -630,26 +403,11 @@ function parseJsLiteral(src, i0) {
     for (const [w, v] of [["true", true], ["false", false], ["null", null], ["undefined", null]]) if (src.startsWith(w, i)) { i += w.length; return v; }
     throw new Error("Unexpected token at " + i + ": " + src.slice(i, i + 20));
   };
-  /**
-   * Reads a value followed by any + concatenations, joining them as strings.
-   *
-   * @return {*} The value, or the concatenated string.
-   */
   const expr = () => { let v = val(); for (;;) { ws(); if (src[i] === "+") { i++; v = String(v) + String(val()); } else return v; } };
   const v = expr(); return v;
 }
 
 /* ---------- question model ---------- */
-/**
- * Normalizes a raw question record from any supported schema into the app's question model.
- *
- * Accepts alternative field names (choices, answer, correctIndex, feedback, references, and so on), converts a
- * letter or digit answer to an index, and assigns a random id when none is given.
- *
- * @param {?Object} raw Imported question record.
- * @param {number=} idx Position, stored as order (default 0).
- * @return {!Object} The normalized question; correct is -1 when it cannot be resolved.
- */
 function normQ(raw, idx) {
   const o = raw || {};
   const options = (o.options || o.choices || o.answers || []).map((x) => typeof x === "object" && x ? String(x.text ?? "") : String(x ?? ""));
@@ -675,12 +433,6 @@ function normQ(raw, idx) {
   };
   return q;
 }
-/**
- * Checks a normalized question for problems that block saving or playing it.
- *
- * @param {!Object} q Question from normQ().
- * @return {!Array<string>} Human-readable problems; empty when the question is valid.
- */
 function validateQ(q) {
   const e = [];
   if (!q.prompt.trim() && !q.img) e.push("needs prompt text or an image");
@@ -694,118 +446,38 @@ function validateQ(q) {
 /* ---------- audio: original synthesized cues (WebAudio) ---------- */
 const AUDIO = {
   ctx: null, muted: lsGet("aa.muted", "0") === "1", loop: null,
-  /**
-   * Returns the shared AudioContext, creating it on first use and resuming it if suspended.
-   *
-   * @return {?AudioContext} The context, or null when WebAudio is unavailable.
-   */
   ensure() { if (!this.ctx) { try { this.ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch { this.ctx = null; } } if (this.ctx && this.ctx.state === "suspended") this.ctx.resume(); return this.ctx; },
-  /**
-   * Plays one synthesized tone with a short attack and exponential decay, unless muted.
-   *
-   * @param {number} f Frequency in Hz.
-   * @param {number} d Duration in seconds.
-   * @param {number=} t0 Start offset in seconds from now (default 0).
-   * @param {string=} type Oscillator type (default "triangle").
-   * @param {number=} g Peak gain (default 0.12).
-   */
   tone(f, d, t0 = 0, type = "triangle", g = 0.12) {
     if (this.muted) return; const c = this.ensure(); if (!c) return;
     const o = c.createOscillator(), v = c.createGain(), t = c.currentTime + t0;
     o.type = type; o.frequency.setValueAtTime(f, t); v.gain.setValueAtTime(0, t); v.gain.linearRampToValueAtTime(g, t + 0.01); v.gain.exponentialRampToValueAtTime(0.0001, t + d);
     o.connect(v).connect(c.destination); o.start(t); o.stop(t + d + 0.05);
   },
-  /**
-   * Plays the two-note cue for a player joining.
-   */
   join() { this.tone(880, 0.12, 0, "sine", 0.08); this.tone(1320, 0.12, 0.06, "sine", 0.06); },
-  /**
-   * Plays the cue for answers opening.
-   */
   open() { [659, 880].forEach((f, k) => this.tone(f, 0.16, k * 0.08, "triangle", 0.09)); },
-  /**
-   * Plays one countdown tick.
-   *
-   * @param {boolean} hurry True for the higher-pitched tick used near the deadline.
-   */
   tick(hurry) { this.tone(hurry ? 1046 : 784, 0.06, 0, "square", 0.04); },
-  /**
-   * Plays the rising arpeggio for a correct answer.
-   */
   correct() { [523, 659, 784, 1046].forEach((f, k) => this.tone(f, 0.25, k * 0.07, "triangle", 0.11)); },
-  /**
-   * Plays the low descending cue for a wrong answer.
-   */
   wrong() { this.tone(233, 0.35, 0, "sawtooth", 0.06); this.tone(220, 0.4, 0.12, "sawtooth", 0.06); },
-  /**
-   * Plays the chord cue for revealing the correct answer.
-   */
   reveal() { [392, 494, 587].forEach((f) => this.tone(f, 0.6, 0, "triangle", 0.07)); this.tone(784, 0.5, 0.18, "sine", 0.07); },
-  /**
-   * Plays the five-note cue for showing the leaderboard.
-   */
   board() { [523, 587, 659, 784, 880].forEach((f, k) => this.tone(f, 0.18, k * 0.08, "square", 0.04)); },
-  /**
-   * Plays the short cue for an answer streak.
-   */
   streak() { [1175, 1397, 1568].forEach((f, k) => this.tone(f, 0.15, k * 0.05, "sine", 0.06)); },
-  /**
-   * Starts the looping lobby music on a 280 ms interval; does nothing if it is already running.
-   *
-   * Notes are skipped while muted, but the interval keeps running until stopLoop().
-   */
   startLoop() {
     if (this.loop) return; const seq = [196, 0, 247, 294, 0, 247, 330, 294]; let k = 0;
     this.loop = setInterval(() => { if (this.muted) return; const f = seq[k++ % seq.length]; if (f) { this.tone(f, 0.22, 0, "triangle", 0.05); if (k % 4 === 1) this.tone(f / 2, 0.3, 0, "sine", 0.06); } }, 280);
   },
-  /**
-   * Stops the lobby music loop.
-   */
   stopLoop() { clearInterval(this.loop); this.loop = null; },
-  /**
-   * Sets the mute state and persists it to localStorage under aa.muted.
-   *
-   * @param {boolean} m True to mute.
-   */
   setMuted(m) { this.muted = m; lsSet("aa.muted", m ? "1" : "0"); },
 };
 
 /* ---------- FLIP animation for keyed lists (leaderboards, lobby) ---------- */
-/**
- * Records the on-screen position of every [data-flip] element before a re-render.
- *
- * @return {!Map<string, !DOMRect>} Bounding rectangles keyed by data-flip value.
- */
 function flipCapture() { const m = new Map(); $$("[data-flip]").forEach((el) => m.set(el.dataset.flip, el.getBoundingClientRect())); return m; }
-/**
- * Animates [data-flip] elements from their previous vertical positions to their new ones (FLIP).
- *
- * Skipped when the user prefers reduced motion.
- *
- * @param {!Map<string, !DOMRect>} before Positions from flipCapture().
- */
 function flipPlay(before) {
   if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
   $$("[data-flip]").forEach((el) => { const b = before.get(el.dataset.flip); if (!b) return; const a = el.getBoundingClientRect(); const dy = b.top - a.top;
     if (Math.abs(dy) > 1) el.animate([{ transform: `translateY(${dy}px)` }, { transform: "none" }], { duration: 450, easing: "cubic-bezier(.2,.9,.3,1)" }); });
 }
-/**
- * Animates an element's text as a number counting from one value to another with ease-out.
- *
- * Sets the final value immediately when reduced motion is preferred or the values are equal.
- *
- * @param {?Element} el Target element; nothing happens when null.
- * @param {number} from Start value.
- * @param {number} to End value.
- * @param {number=} ms Duration in milliseconds (default 900).
- */
 function countUp(el, from, to, ms = 900) {
   if (!el) return; if (matchMedia("(prefers-reduced-motion: reduce)").matches || from === to) { el.textContent = to.toLocaleString(); return; }
-  /**
-   * Renders one animation frame of countUp() and schedules the next until done.
-   *
-   * @param {number} t Frame timestamp from requestAnimationFrame.
-   */
   const t0 = performance.now(); const step = (t) => { const p = Math.min(1, (t - t0) / ms); const e = 1 - Math.pow(1 - p, 3); el.textContent = Math.round(from + (to - from) * e).toLocaleString(); if (p < 1) requestAnimationFrame(step); };
   requestAnimationFrame(step);
 }
@@ -820,21 +492,7 @@ const CURATED = [
   { id: "mit6006-l16", title: "MIT 6.006 (Spring 2020) Lecture 16: Dynamic Programming, Part 2: LCS, LIS, Coins", url: "https://www.youtube.com/watch?v=KLBCUx1is2c", tags: "dynamic programming lcs longest common subsequence lis coin change subproblem parent pointers", verified: "2026-10-15 via MIT OCW lecture page" },
   { id: "mit6006-l19", title: "MIT 6.006 (Spring 2020) Lecture 19: Complexity", url: "https://www.youtube.com/watch?v=JbafQJx1CIA", tags: "np-completeness np p reduction complexity np-hard decision problem intractability", verified: "2026-10-15 via MIT OCW lecture page" },
 ];
-/**
- * Reports whether a URL points to YouTube (youtube.com or youtu.be, including subdomains).
- *
- * @param {string} url URL to test.
- * @return {boolean} True for YouTube hosts; false for other or invalid URLs.
- */
 function isYouTube(url) { try { const u = new URL(url); return /(^|\.)youtube\.com$|(^|\.)youtu\.be$/.test(u.hostname); } catch { return false; } }
-/**
- * Ranks library resources by how many of their tags appear as words in a text.
- *
- * @param {!Array<{tags: string}>} lib Resource library such as CURATED.
- * @param {string} text Text to match (words over 2 characters).
- * @param {number=} k Maximum results (default 6).
- * @return {!Array<!Object>} The top k resources, each copied with a score field, highest first.
- */
 function rankResources(lib, text, k = 6) {
   const toks = new Set(String(text).toLowerCase().split(/[^a-z0-9-]+/).filter((w) => w.length > 2));
   return lib.map((r) => { const tg = r.tags.toLowerCase().split(/[^a-z0-9-]+/); let s = 0; for (const t of tg) if (toks.has(t)) s++; return { r, s }; })
@@ -852,164 +510,35 @@ const S = {
 const C = { db: null, user: null, room: null, assets: null, sample: null, downloads: null };
 let DB = null;
 const P = {
-  /**
-   * Returns the Firestore path of the signed-in user's profile document.
-   *
-   * @return {string} The path.
-   */
   profile: () => `data/users/${S.uid}/profile`,
-  /**
-   * Returns the path of the user's active-device document.
-   *
-   * @return {string} The path.
-   */
   device: () => `data/users/${S.uid}/device`,
-  /**
-   * Returns the path of the user's question-set collection.
-   *
-   * @return {string} The path.
-   */
   sets: () => `data/users/${S.uid}/profile/sets`,
-  /**
-   * Returns the path of the question collection inside one of the user's sets.
-   *
-   * @param {string} id Set id.
-   * @return {string} The path.
-   */
   setQ: (id) => `data/users/${S.uid}/profile/sets/${id}/q`,
-  /**
-   * Returns the path of the user's hosted-session collection.
-   *
-   * @return {string} The path.
-   */
   sessions: () => `data/users/${S.uid}/profile/sessions`,
-  /**
-   * Returns the path of a session's log collection.
-   *
-   * @param {string} sid Session id.
-   * @return {string} The path.
-   */
   sLog: (sid) => `data/users/${S.uid}/profile/sessions/${sid}/log`,
-  /**
-   * Returns the path of a session's content collection.
-   *
-   * @param {string} sid Session id.
-   * @return {string} The path.
-   */
   sContent: (sid) => `data/users/${S.uid}/profile/sessions/${sid}/content`,
-  /**
-   * Returns the path of a session's AI-report collection.
-   *
-   * @param {string} sid Session id.
-   * @return {string} The path.
-   */
   sAi: (sid) => `data/users/${S.uid}/profile/sessions/${sid}/ai`,
-  /**
-   * Returns the path of the user's keys collection.
-   *
-   * @return {string} The path.
-   */
   keys: () => `data/users/${S.uid}/profile/keys`,
-  /**
-   * Returns the path of the user's expo collection.
-   *
-   * @return {string} The path.
-   */
   expo: () => `data/users/${S.uid}/profile/expo`,
-  /**
-   * Returns the path of the user's joined-games collection.
-   *
-   * @return {string} The path.
-   */
   joined: () => `data/users/${S.uid}/profile/joined`,
-  /**
-   * Path builders for shared room data, each taking a host or user uid.
-   *
-   * room(h) returns rooms/<h>, the host's room document; rep(h) returns rooms/<h>/r, the sealed AI-report
-   * deliveries (document id <sid>_<recipient uid>); pub(u) returns pub/<u>, the
-   * user's public player document; answers(h) returns rooms/<h>/answers, the room's answer collection.
-   *
-   * @param {string} h Host uid (room, rep, answers); pub takes a user uid u instead.
-   * @return {string} The path.
-   */
+  /** rep(h) holds sealed AI-report deliveries keyed by repId(sid, uid); pub(u) is the player's single public record, overwritten when they join another game. */
   room: (h) => `rooms/${h}`, rep: (h) => `rooms/${h}/r`, pub: (u) => `pub/${u}`, answers: (h) => `rooms/${h}/answers`,
   bank: "bank", bankMeta: "meta/bank", lib: "meta/lib",
 };
 const wq = new Map();
-/**
- * Chains a write behind any earlier write to the same path so writes per path run in order.
- *
- * Rejects with code "displaced" when this device is no longer the active one (S.displaced); a failure does not
- * block later writes to the path.
- *
- * @param {string} path Document path used as the queue key.
- * @param {function(): !Promise<*>} fn The write to run.
- * @return {!Promise<*>} Resolves or rejects with fn's outcome.
- */
+/** Per-path write queue: a failed write does not block later ones, and every queued write is refused once this device is displaced. */
 function serial(path, fn) {
   const prev = wq.get(path) || Promise.resolve();
   const p = prev.then(() => { if (S.displaced) throw Object.assign(new Error("This device is no longer the active one."), { code: "displaced" }); return fn(); });
   wq.set(path, p.catch(() => {})); return p;
 }
-/**
- * Runs an async operation, retrying once after a random 300 to 1000 ms delay if it fails with code "unavailable".
- *
- * @param {function(): !Promise<*>} fn Operation to run.
- * @return {!Promise<*>} Its result.
- * @throws {*} Any other error, or the retry's error.
- */
 async function retry(fn) { try { return await fn(); } catch (e) { if (e && e.code === "unavailable") { await sleep(300 + Math.random() * 700); return fn(); } throw e; } }
-/**
- * Reads one document from DB with retry.
- *
- * @param {string} path Document path.
- * @return {!Promise<?Object>} The document data, or null when it does not exist.
- */
 async function dget(path) { const s = await retry(() => DB.doc(path).get()); return s.exists ? s.data() : null; }
-/**
- * Replaces a document's data, serialized per path and retried once when unavailable.
- *
- * @param {string} path Document path.
- * @param {!Object} data New data.
- * @return {!Promise<*>} Resolves when written.
- */
 const dset = (path, data) => serial(path, () => retry(() => DB.doc(path).set(data)));
-/**
- * Merges fields into an existing document, serialized per path and retried once when unavailable.
- *
- * @param {string} path Document path.
- * @param {!Object} data Fields to update.
- * @return {!Promise<*>} Resolves when written.
- */
 const dupd = (path, data) => serial(path, () => retry(() => DB.doc(path).update(data)));
-/**
- * Deletes a document, serialized per path and retried once when unavailable.
- *
- * @param {string} path Document path.
- * @return {!Promise<*>} Resolves when deleted.
- */
 const ddel = (path) => serial(path, () => retry(() => DB.doc(path).delete()));
-/**
- * Lists the documents of a collection, optionally refined by a query builder.
- *
- * @param {string} col Collection path.
- * @param {?function(*): *=} build Optional function that adds where/orderBy/limit to the query.
- * @return {!Promise<!Array<!Object>>} Each document's data with its id as _id.
- */
 async function dlist(col, build) { let q = DB.collection(col); if (build) q = build(q); const s = await retry(() => q.get()); return s.docs.map((d) => ({ _id: d.id, ...d.data() })); }
-/**
- * Deep-copies a JSON-compatible value via JSON round-trip.
- *
- * @param {*} x Value to copy; null and undefined are returned as is.
- * @return {*} The copy.
- */
 const clone = (x) => x == null ? x : JSON.parse(JSON.stringify(x));
-/**
- * Converts an error into a user-facing message, with friendlier text for quota, refused-write and displaced errors.
- *
- * @param {*} e Error or value thrown.
- * @return {string} The message to show.
- */
 function errMsg(e) {
   if (!e) return "Something went wrong.";
   if (e.code === "quota_exceeded") return "Storage is full for this artifact. Delete old sessions or sets, then try again.";
@@ -1017,54 +546,18 @@ function errMsg(e) {
   if (e.code === "displaced") return e.message;
   return e.message || String(e);
 }
-/**
- * Shows a transient status message, replacing any current one.
- *
- * @param {string} msg Message text.
- * @param {number=} ms How long to show it in milliseconds (default 3200).
- */
 function toast(msg, ms = 3200) { S.toast = msg; renderToast(); clearTimeout(toast.t); toast.t = setTimeout(() => { S.toast = null; renderToast(); }, ms); }
-/**
- * Creates, updates or removes the #toast element to match S.toast.
- */
 function renderToast() { let el = $("#toast"); if (!S.toast) { el && el.remove(); return; } if (!el) { el = document.createElement("div"); el.id = "toast"; el.className = "toast"; el.setAttribute("role", "status"); document.body.appendChild(el); } el.textContent = S.toast; }
-/**
- * Saves a file through the host's downloads capability (C.downloads), toasting on failure.
- *
- * @param {string} filename Suggested file name.
- * @param {*} data File contents as accepted by C.downloads.save.
- * @return {!Promise<boolean>} True when saved; false when unavailable, declined or failed.
- */
 async function saveFile(filename, data) {
   if (!C.downloads) { toast("Downloads aren't available in this view."); return false; }
   try { await C.downloads.save({ filename, data }); return true; }
   catch (e) { if (e && e.code === "declined") return false; toast("Download failed: " + (e && e.message || e)); return false; }
 }
-/**
- * Returns the URL that serves a stored asset blob.
- *
- * @param {?string} id Asset id.
- * @return {string} The /_blob/ URL, or an empty string when id is falsy.
- */
 const blobUrl = (id) => id ? "/_blob/" + id : "";
 
 /* ===================== router ===================== */
 const VIEWS = {}; const AFTER = {}; const ACT = {};
-/**
- * Navigates to a view and re-renders from the top of the page.
- *
- * Cancels any open modal (resolving it as cancelled) and closes any dialog first.
- *
- * @param {string} view Key of VIEWS to show.
- * @param {!Object=} args Arguments for the view (default {}).
- */
 function go(view, args = {}) { if (S.modal) { const m = S.modal; S.modal = null; m.res(m.kind === "confirm" ? false : null); } S.view = view; S.args = args; S.dialog = null; render(); window.scrollTo(0, 0); }
-/**
- * Renders the whole app into #app: top bar, current view, dialog, modal and displaced overlay.
- *
- * Then runs the view's AFTER hook, plays FLIP animations, focuses the modal's first field or OK button, and
- * restores the scroll position when S.keepScroll is set.
- */
 function render() {
   const app = $("#app"); if (!app) return;
   const before = flipCapture();
@@ -1077,67 +570,22 @@ function render() {
   if (S.keepScroll) window.scrollTo(0, scrollY);
   S.keepScroll = false;
 }
-/**
- * Re-renders the app while keeping the current scroll position.
- */
 function rerender() { S.keepScroll = true; render(); }
 /* v2.1.1: in-page replacements for window.confirm and window.prompt. claude.ai runs artifacts in a sandboxed frame where native
    modals can be blocked; a blocked window.confirm returns false without showing anything, so the action silently did nothing. */
-/**
- * Shows an in-page confirmation modal, replacing window.confirm.
- *
- * @param {string} msg Message to show.
- * @param {string=} okLabel Confirm button label (default "Confirm").
- * @param {boolean=} danger True to style the confirm button as destructive.
- * @return {!Promise<boolean>} True when confirmed, false when cancelled.
- */
 function askConfirm(msg, okLabel = "Confirm", danger = false) { return new Promise((res) => { S.modal = { kind: "confirm", msg, okLabel, danger, res }; rerender(); }); }
-/**
- * Shows an in-page modal with text fields, replacing window.prompt.
- *
- * @param {string} title Modal heading.
- * @param {!Array<!Object>} fields Field specs with id, label and optional value, type, placeholder, multiline.
- * @param {string=} okLabel OK button label (default "Add").
- * @param {?function(!Object): ?string=} validate Returns an error message to keep the modal open, or null.
- * @return {!Promise<?Object>} Field values keyed by id, or null when cancelled.
- */
 function askText(title, fields, okLabel = "Add", validate = null) { return new Promise((res) => { S.modal = { kind: "text", title, fields, okLabel, validate, vals: Object.fromEntries(fields.map((f) => [f.id, f.value || ""])), res }; rerender(); }); }
-/**
- * Returns the HTML for the current confirm or text modal (S.modal).
- *
- * @return {string} The modal markup, or an empty string when no modal is open.
- */
 function modalHtml() {
   const m = S.modal; if (!m) return "";
   const fields = m.kind === "text" ? m.fields.map((f) => `<label class="f">${esc(f.label)}${f.multiline ? `<textarea data-mfield="${f.id}" rows="4">${esc(m.vals[f.id] ?? "")}</textarea>` : `<input data-mfield="${f.id}" type="${f.type || "text"}" value="${esc(m.vals[f.id] ?? "")}" placeholder="${esc(f.placeholder || "")}">`}</label>`).join("") : "";
   return `<div class="dialog" style="max-width:480px">${m.title ? `<h2 style="margin-top:0">${esc(m.title)}</h2>` : ""}${m.msg ? `<p>${esc(m.msg)}</p>` : ""}${fields ? `<div class="stack">${fields}</div>` : ""}${m.err ? `<p class="small" role="alert" style="color:var(--bad)">${esc(m.err)}</p>` : ""}
     <div class="row" style="margin-top:18px;justify-content:flex-end"><button class="btn ghost" data-act="mCancel">Cancel</button><button class="btn ${m.danger ? "danger" : "primary"}" data-act="mOk">${esc(m.okLabel)}</button></div></div>`;
 }
-/**
- * Copies the current values of the modal's input fields into S.modal.vals.
- */
 function readModal() { const m = S.modal; if (m && m.vals) $$("[data-mfield]").forEach((el) => { m.vals[el.dataset.mfield] = el.value; }); }
-/**
- * Handles the modal OK button.
- *
- * For a text modal, reads the fields and runs the validator, showing its error and keeping the modal open;
- * otherwise closes the modal and resolves it with true (confirm) or a copy of the values (text).
- */
 ACT.mOk = () => { const m = S.modal; if (!m) return; if (m.kind === "text") { readModal(); const err = m.validate ? m.validate(m.vals) : null; if (err) { m.err = err; return rerender(); } } S.modal = null; rerender(); m.res(m.kind === "confirm" ? true : { ...m.vals }); };
-/**
- * Handles the modal Cancel button: closes the modal and resolves it with false (confirm) or null (text).
- */
 ACT.mCancel = () => { const m = S.modal; if (!m) return; S.modal = null; rerender(); m.res(m.kind === "confirm" ? false : null); };
 document.addEventListener("input", (e) => { const f = e.target.closest && e.target.closest("[data-mfield]"); if (f && S.modal && S.modal.vals) S.modal.vals[f.dataset.mfield] = f.value; });
-/**
- * Opens a dialog overlay rendered by the given function.
- *
- * @param {function(): string} fn Returns the dialog's HTML on each render.
- */
 function openDialog(fn) { S.dialog = fn; rerender(); }
-/**
- * Closes the dialog overlay.
- */
 function closeDialog() { S.dialog = null; rerender(); }
 document.addEventListener("click", (e) => {
   const el = e.target.closest("[data-act]"); if (!el || el.disabled) return;
@@ -1152,45 +600,17 @@ document.addEventListener("keydown", (e) => {
   if (S.view === "play" && /^[1-4]$/.test(e.key) && !e.target.closest("input,textarea")) { const b = $(`[data-act="answer"][data-i="${Number(e.key) - 1}"]`); b && b.click(); }
 });
 const MARK = '<span class="mk"><svg viewBox="0 0 24 24"><path d="M12 2l8.66 5v10L12 22l-8.66-5V7z"/></svg></span>';
-/**
- * Returns the top bar HTML: wordmark home button plus, when signed in, the sound toggle (hidden on the host and
- * play views) and the display-name chip.
- *
- * @return {string} The header markup.
- */
 function topbar() {
   return `<header class="topbar"><div class="wrap"><button class="wordmark" data-act="home" aria-label="AlgoArena home">${MARK}AlgoArena</button><span class="spacer"></span>
   ${S.uid ? `${S.view === "host" || S.view === "play" ? "" : `<button class="btn sm ghost" data-act="mute" aria-pressed="${AUDIO.muted}">${AUDIO.muted ? "Sound off" : "Sound on"}</button>`}
   ${S.profile && S.profile.displayName ? `<button class="chip" data-act="rename" title="Change display name">${esc(S.profile.displayName)}</button>` : ""}` : ""}</div></header>`;
 }
-/**
- * Goes to the home view and reloads its data, leaving any live game.
- *
- * Asks for confirmation first when hosting a game that has not ended.
- */
 ACT.home = async () => { if (S.view === "host" && S.host && S.host.room && S.host.room.status !== "ended") { if (!(await askConfirm("Leave the host screen? The game keeps its state and you can resume from Home.", "Leave"))) return; } leaveLive(); go("home"); loadHome(); };
-/**
- * Toggles sound, stopping the lobby music when muting and restarting it when unmuting in a host lobby.
- */
 ACT.mute = () => { AUDIO.setMuted(!AUDIO.muted); if (AUDIO.muted) AUDIO.stopLoop(); else if (S.view === "host" && S.host && S.host.room && S.host.room.status === "lobby") AUDIO.startLoop(); rerender(); };
-/**
- * Closes the open dialog.
- */
 ACT.close = () => closeDialog();
-/**
- * Opens the display-name view in rename mode.
- */
 ACT.rename = () => go("name", { rename: true });
 
 /* ===================== boot, auth gate, display name, single active device ===================== */
-/**
- * Starts the app: connects to the host's db and user services, checks sign-in and write access, loads the profile,
- * claims this device, then routes to the gate, name or home view.
- *
- * Optional capabilities (room, assets, sample, downloads) load in the background into C.
- *
- * @return {!Promise<void>} Resolves when boot routing finishes.
- */
 async function boot() {
   render();
   if (!window.claude || typeof window.claude.use !== "function") return go("gate", { reason: "noclaude" });
@@ -1207,18 +627,7 @@ async function boot() {
   if (!S.profile || !S.profile.displayName) return go("name", {});
   go("home"); await loadHome(); await autoResume();
 }
-/**
- * Renders the boot placeholder shown while connecting.
- *
- * @return {string} The view HTML.
- */
 VIEWS.boot = () => `<main><div class="wrap"><p class="muted">Connecting to AlgoArena…</p></div></main>`;
-/**
- * Renders the sign-in gate with a message for the failure reason.
- *
- * @param {{reason: string, msg: (string|undefined)}} a Reason is noclaude, signin, viewonly or error.
- * @return {string} The view HTML with a Sign in or Try again button.
- */
 VIEWS.gate = (a) => {
   const m = { noclaude: "AlgoArena couldn't reach its sign-in and storage service. Check your connection, then reload the page.",
     signin: "Sign in with your Google account to use AlgoArena. Every player and host signs in; your account keeps your answers, scores, and reports attached to you across devices.",
@@ -1226,45 +635,14 @@ VIEWS.gate = (a) => {
     error: "AlgoArena couldn't load your data: " + (a.msg || "") };
   return `<main><div class="wrap" style="max-width:640px"><h1>Sign in to play</h1><p>${esc(m[a.reason] || m.signin)}</p>${a.reason === "signin" && window.claude && window.claude.signIn ? '<button class="btn primary big" data-act="signIn">Sign in with Google</button>' : '<button class="btn primary" data-act="reload">Try again</button>'}</div></main>`;
 };
-/**
- * Starts sign-in through window.claude.signIn and reloads on success; re-enables the button and toasts on failure.
- *
- * @param {!Element} btn The clicked button.
- * @return {!Promise<void>}
- */
 ACT.signIn = async (btn) => { btn.disabled = true; try { await window.claude.signIn(); location.reload(); } catch (e) { btn.disabled = false; toast("Sign-in didn't finish: " + ((e && (e.code || e.message)) || e)); } };
-/**
- * Leaves any live game, signs out and reloads the page.
- *
- * @return {!Promise<void>}
- */
 ACT.signOut = async () => { leaveLive(); await window.claude.signOut(); location.reload(); };
-/**
- * Reloads the page.
- */
 ACT.reload = () => location.reload();
-/**
- * Renders the display-name form.
- *
- * @param {{rename: (boolean|undefined)}} a True when changing an existing name (adds a Cancel button).
- * @return {string} The view HTML.
- */
 VIEWS.name = (a) => `<main><div class="wrap" style="max-width:560px"><h1>${a.rename ? "Change your display name" : "Pick a display name"}</h1>
   <p class="muted">This name appears in lobbies, on leaderboards, and on the host's dashboard. If your instructor asks for real names, use yours. It is separate from your sign-in identity.</p>
   <div class="stack"><label class="f">Display name<input id="dn" maxlength="32" autocomplete="nickname" value="${esc((S.profile && S.profile.displayName) || S.suggestName || "")}"></label>
   <div class="row"><button class="btn primary big" data-act="saveName">Save name</button>${a.rename ? '<button class="btn ghost" data-act="home">Cancel</button>' : ""}</div></div></div></main>`;
-/**
- * Focuses the display-name input and, when it is empty, pre-fills it with the account name from C.user.me().
- */
 AFTER.name = () => { const i = $("#dn"); if (i) { i.focus(); if (!i.value && C.user) C.user.me().then((m) => { if (!i.value && m && m.name) i.value = m.name; }).catch(() => {}); } };
-/**
- * Saves the display name (at least 2 characters, whitespace collapsed) to the profile.
- *
- * Creates createdAt and a random salt on first save, updates the name on the player's public document when one
- * exists, then goes home and reloads home data.
- *
- * @return {!Promise<void>}
- */
 ACT.saveName = async () => {
   const v = $("#dn").value.trim().replace(/\s+/g, " ");
   if (v.length < 2) return toast("Use at least 2 characters.");
@@ -1275,14 +653,7 @@ ACT.saveName = async () => {
   if (S.play && S.play.pubExists) dupd(P.pub(S.uid), { name: v }).catch(() => {});
   go("home"); loadHome(); autoResume();
 };
-/**
- * Marks this device as the user's active device and watches for another device taking over.
- *
- * Records the previous device in S.tookOverFrom when it differs. When a later snapshot names another device,
- * sets S.displaced, leaves any live game while keeping its state, and re-renders.
- *
- * @return {!Promise<void>} Resolves once the claim is written and the listener attached.
- */
+/** One active device per account: the last claim wins, and a displaced device has its writes refused by serial() and leaves the live game. */
 async function claimDevice() {
   const cur = await dget(P.device()).catch(() => null);
   const prev = cur && cur.deviceId;
@@ -1296,31 +667,14 @@ async function claimDevice() {
     if (out !== S.displaced) { S.displaced = out; if (out) { leaveLive(true); } rerender(); }
   }, () => {});
 }
-/**
- * Returns the blocking dialog shown when this account became active on another device.
- *
- * @return {string} HTML for the overlay, whose button triggers ACT.retake.
- */
 function displacedOverlay() {
   return `<div class="overlay" role="alertdialog" aria-modal="true"><div class="dialog"><h2>You're signed in on another device</h2>
   <p>Your account is now active on a different device, so this one has stopped. Your answers, score, streak, and timing are kept. If you switch back, the current question keeps its original timer.</p>
   <button class="btn primary big" data-act="retake">Use this device</button></div></div>`;
 }
-/**
- * Takes this device back after it was displaced by another device.
- *
- * Clears S.displaced, re-claims the device record, navigates Home, reloads its lists, and resumes any live game.
- * @return {!Promise<void>}
- */
 ACT.retake = async () => { S.displaced = false; await claimDevice(); go("home"); await loadHome(); await autoResume(); };
 
 /* ===================== home ===================== */
-/**
- * Loads the Home lists in parallel: the user's sets, hosted sessions, joined games, the curated library, and bank metadata.
- *
- * Results are stored on S (lists sorted newest first); a failed load is only logged. Re-renders if still on Home.
- * @return {!Promise<void>}
- */
 async function loadHome() {
   const tasks = [
     dlist(P.sets()).then((x) => { S.sets = x.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0)); }),
@@ -1332,23 +686,11 @@ async function loadHome() {
   await Promise.all(tasks.map((t) => t.catch((e) => console.warn(e))));
   if (S.view === "home") rerender();
 }
-/**
- * Returns a room code to prefill in the Join box, taken from the "join" query parameter or "join=" hash of this
- * URL, or else from the referrer's "join" parameter.
- *
- * @return {string} The upper-cased code, or "" when none is found.
- */
 function joinPrefill() {
   try { const u = new URL(location.href); const c = u.searchParams.get("join") || (u.hash.match(/join=([A-Za-z0-9]{6})/) || [])[1]; if (c) return c.toUpperCase(); } catch {}
   try { const r = document.referrer && new URL(document.referrer); const c = r && r.searchParams.get("join"); if (c) return c.toUpperCase(); } catch {}
   return "";
 }
-/**
- * Renders the Home view: resume notices, the host and join tiles, the tab bar, and the active tab's content.
- *
- * The tab comes from S.args.tab (default "sets").
- * @return {string} HTML for the view.
- */
 VIEWS.home = () => {
   const tab = S.args.tab || "sets";
   const active = S.resumeRoom ? `<div class="notice" style="margin-bottom:18px"><b>You have a live game in progress</b> (room ${esc(S.resumeRoom.code)}, ${esc(S.resumeRoom.setTitle || "")}). <button class="btn sm primary" data-act="resumeHost">Resume hosting</button></div>` : "";
@@ -1366,25 +708,8 @@ VIEWS.home = () => {
   ${window.claude && window.claude.signOut ? '<p class="muted small" style="margin-top:32px">Signed in with Google. <button class="btn sm ghost" data-act="signOut">Sign out</button></p>' : ""}
   </div></main>`;
 };
-/**
- * Switches the Home tab to the clicked tab.
- *
- * Loads the built-in bank on first visit to the bank tab, and scrolls the tab bar into view for the sets tab.
- * @param {!Element} el The tab button; its data-tab names the tab.
- */
 ACT.tab = (el) => { S.args = { ...S.args, tab: el.dataset.tab }; rerender(); if (el.dataset.tab === "bank" && !S.bank) loadBank(); if (el.dataset.tab === "sets") { const t = $(".tabs"); t && t.scrollIntoView({ behavior: "smooth" }); } };
-/**
- * Formats a set's optional course, week, and topic as an escaped, comma-separated line.
- *
- * @param {!Object} s The set metadata.
- * @return {string} The joined details, or "" when none are set.
- */
 function setMeta(s) { return [s.course, s.week && "Week " + s.week, s.topic].filter(Boolean).map(esc).join(", "); }
-/**
- * Renders the "My question sets" tab from S.sets, with host, edit, duplicate, and delete buttons per set.
- *
- * @return {string} HTML for the tab (a loading or empty state when appropriate).
- */
 function homeSets() {
   if (!S.sets) return `<p class="muted">Loading your sets…</p>`;
   const head = `<div class="row" style="margin-bottom:14px"><button class="btn primary" data-act="newSet">New question set</button><button class="btn ghost" data-act="importNewSet">Import JSON as a new set</button><span class="muted small">Sets are private to you. Course, week, and topic are optional.</span></div>`;
@@ -1393,11 +718,6 @@ function homeSets() {
     <button class="btn primary sm" data-act="launch" data-id="${s._id}" ${s.count ? "" : "disabled title=\"Add questions first\""}>Host live</button>
     <button class="btn sm" data-act="editSet" data-id="${s._id}">Edit</button><button class="btn sm ghost" data-act="dupSet" data-id="${s._id}">Duplicate</button><button class="btn sm danger" data-act="delSet" data-id="${s._id}">Delete</button></div>`).join("")}</div>`;
 }
-/**
- * Renders the "Hosted sessions" tab from S.sessions, with export-all buttons and a dashboard link per session.
- *
- * @return {string} HTML for the tab (a loading or empty state when appropriate).
- */
 function homeSessions() {
   if (!S.sessions) return `<p class="muted">Loading…</p>`;
   if (!S.sessions.length) return `<div class="empty"><h3>No hosted sessions yet</h3><p>Sessions you host appear here with their dashboards, research exports, and AI learning reports.</p></div>`;
@@ -1405,27 +725,12 @@ function homeSessions() {
   <div class="list">${S.sessions.map((s) => `<div class="item"><div class="grow"><div class="t">${esc(s.setTitle || "Session")}</div><div class="muted small">Room ${esc(s.code)}, ${fmtDate(s.createdAt)}, ${s.participantCount || 0} participants, ${s.endAt ? "finished" : "in progress"}</div></div>
   <button class="btn sm primary" data-act="openSession" data-id="${s._id}">Open dashboard</button></div>`).join("")}</div>`;
 }
-/**
- * Renders the "My live reports" tab from S.joined, listing games the user played with review and report buttons.
- *
- * @return {string} HTML for the tab (a loading or empty state when appropriate).
- */
 function homeReports() {
   if (!S.joined) return `<p class="muted">Loading…</p>`;
   if (!S.joined.length) return `<div class="empty"><h3>No live reports yet</h3><p>After you finish a live game, your answer review and AI learning report appear here.</p></div>`;
   return `<div class="list">${S.joined.map((j) => `<div class="item"><div class="grow"><div class="t">${esc(j.title || "Live game")}</div><div class="muted small">Room ${esc(j.code)}, hosted by ${esc(j.hostName || "host")}, ${fmtDate(j.at)}</div></div><button class="btn sm ghost" data-act="myReview" data-sid="${esc(j.sid)}">Review answers</button><button class="btn sm primary" data-act="myReport" data-host="${esc(j.host)}" data-sid="${esc(j.sid)}">View report</button></div>`).join("")}</div>`;
 }
-/**
- * Returns the learning-resource library: the built-in CURATED videos followed by editor-added items in S.lib.
- *
- * @return {!Array<!Object>} The combined list.
- */
 function libItems() { return [...CURATED, ...((S.lib && S.lib.items) || [])]; }
-/**
- * Renders the "Learning resources" tab: the video table, plus an add-video form and remove buttons for admins.
- *
- * @return {string} HTML for the tab.
- */
 function homeLib() {
   const items = libItems();
   return `<p class="muted">AI learning reports may only recommend videos from this curated library, so every link is one a person checked. ${S.isAdmin ? "As an editor you can add YouTube videos." : "Editors of this artifact can add videos."}</p>
@@ -1433,12 +738,6 @@ function homeLib() {
   <div class="table-wrap"><table><thead><tr><th>Video</th><th>Keywords</th><th>Verified</th>${S.isAdmin ? "<th></th>" : ""}</tr></thead><tbody>
   ${items.map((r) => `<tr><td class="wrap-cell"><a href="${esc(r.url)}" target="_blank" rel="noopener noreferrer">${esc(r.title)}</a></td><td class="wrap-cell small">${esc(r.tags)}</td><td class="small">${esc(r.verified || "")}</td>${S.isAdmin ? `<td>${CURATED.some((c) => c.id === r.id) ? '<span class="muted small">Built in</span>' : `<button class="btn sm danger" data-act="libDel" data-id="${esc(r.id)}">Remove</button>`}</td>` : ""}</tr>`).join("")}</tbody></table></div>`;
 }
-/**
- * Adds a YouTube video from the library form to the shared library document (meta/lib).
- *
- * Requires title, URL, and keywords, a YouTube URL, and the "checked the link" box; otherwise shows a toast.
- * @return {!Promise<void>}
- */
 ACT.libAdd = async () => {
   const title = $("#lt").value.trim(), url = $("#lu").value.trim(), tags = $("#lk").value.trim();
   if (!title || !url || !tags) return toast("Fill in the title, URL, and keywords.");
@@ -1447,112 +746,35 @@ ACT.libAdd = async () => {
   const items = clone((S.lib && S.lib.items) || []); items.push({ id: "u" + rid(8), title, url, tags: tags.replace(/,/g, " "), verified: new Date().toISOString().slice(0, 10) + " by an editor" });
   const doc = { items, updatedAt: now() }; await dset(P.lib, doc); S.lib = doc; toast("Added to the library."); rerender();
 };
-/**
- * Removes an editor-added video from the shared library document and re-renders.
- *
- * @param {!Element} el The remove button; its data-id is the item id.
- * @return {!Promise<void>}
- */
 ACT.libDel = async (el) => { const items = clone((S.lib && S.lib.items) || []).filter((x) => x.id !== el.dataset.id); const doc = { items, updatedAt: now() }; await dset(P.lib, doc); S.lib = doc; rerender(); };
 
 /* ===================== question sets ===================== */
-/**
- * Loads a question set's metadata and its questions, sorted by order then id.
- *
- * @param {string} id The set id.
- * @return {!Promise<{id: string, meta: !Object, qs: !Array<!Object>}>} The set; each question carries its id.
- * @throws {Error} When the set document no longer exists.
- */
 async function loadSet(id) {
   const meta = await dget(`${P.sets()}/${id}`); if (!meta) throw new Error("That set no longer exists.");
   const qs = (await dlist(P.setQ(id))).sort((a, b) => (a.order ?? 0) - (b.order ?? 0) || String(a._id).localeCompare(b._id));
   return { id, meta, qs: qs.map((q) => ({ ...clone(q), id: q._id })) };
 }
-/**
- * Updates a set's updatedAt timestamp and question count.
- *
- * @param {string} id The set id.
- * @param {number} count The current number of questions.
- * @return {!Promise<void>}
- */
 async function touchSet(id, count) { await dupd(`${P.sets()}/${id}`, { updatedAt: now(), count }); }
-/**
- * Creates an empty "Untitled set" with a random id and opens it in the set editor.
- *
- * @return {!Promise<void>}
- */
 ACT.newSet = async () => {
   const id = "set_" + rid(10); const meta = { title: "Untitled set", course: "", week: "", topic: "", description: "", createdAt: now(), updatedAt: now(), count: 0 };
   await dset(`${P.sets()}/${id}`, meta); go("set", { id }); await openSetEditor(id);
 };
-/**
- * Navigates to the set editor for the clicked set and loads it.
- *
- * @param {!Element} el The button; its data-id is the set id.
- * @return {!Promise<void>}
- */
 ACT.editSet = async (el) => { go("set", { id: el.dataset.id }); await openSetEditor(el.dataset.id); };
-/**
- * Loads a set into S.edit for the editor, showing a loading state meanwhile.
- *
- * @param {string} id The set id.
- * @return {!Promise<void>}
- */
 async function openSetEditor(id) { S.edit = null; rerender(); S.edit = await loadSet(id); if (S.view === "set") rerender(); }
-/**
- * Duplicates the clicked set, copying its metadata (title suffixed "(copy)") and all questions under new ids.
- *
- * @param {!Element} el The button; its data-id is the source set id.
- * @return {!Promise<void>}
- */
 ACT.dupSet = async (el) => {
   const src = await loadSet(el.dataset.id); const id = "set_" + rid(10);
   await dset(`${P.sets()}/${id}`, { ...clone(src.meta), title: (src.meta.title || "Set") + " (copy)", createdAt: now(), updatedAt: now(), count: src.qs.length });
   await writeQuestions(id, src.qs.map((q) => ({ ...q, id: "q" + rid(9) })));
   toast("Duplicated."); await loadHome();
 };
-/**
- * Deletes the clicked set and all its questions after confirmation; past session records are kept.
- *
- * @param {!Element} el The button; its data-id is the set id.
- * @return {!Promise<void>}
- */
 ACT.delSet = async (el) => {
   const s = (S.sets || []).find((x) => x._id === el.dataset.id); if (!(await askConfirm(`Delete "${s ? s.title : "this set"}" and its questions? Past session records are kept.`, "Delete set", true))) return;
   const qs = await dlist(P.setQ(el.dataset.id)); await pool(qs.map((q) => () => ddel(`${P.setQ(el.dataset.id)}/${q._id}`)), 6);
   await ddel(`${P.sets()}/${el.dataset.id}`); toast("Set deleted."); await loadHome();
 };
-/**
- * Runs async tasks with at most n running at once, preserving result order.
- *
- * The inner run() worker repeatedly takes the next unstarted task until none remain.
- * @param {!Array<function(): !Promise<*>>} fns The task factories.
- * @param {number} n The maximum concurrency.
- * @return {!Promise<!Array<*>>} The results, indexed like fns.
- */
 async function pool(fns, n) { const out = []; let i = 0; const run = async () => { while (i < fns.length) { const k = i++; out[k] = await fns[k](); } }; await Promise.all(Array.from({ length: Math.min(n, fns.length) }, run)); return out; }
-/**
- * Builds the stored document for a question: a copy with the given order and without id or _id.
- *
- * @param {!Object} q The question.
- * @param {number} order Its position in the set.
- * @return {!Object} The document to write.
- */
 function qDoc(q, order) { const d = { ...q, order }; delete d.id; delete d._id; return d; }
-/**
- * Writes questions into a set (six at a time), each under its own id with consecutive order values.
- *
- * @param {string} setId The set id.
- * @param {!Array<!Object>} qs The questions; each needs an id.
- * @param {number=} startOrder The order of the first question (default 0).
- * @return {!Promise<void>}
- */
 async function writeQuestions(setId, qs, startOrder = 0) { await pool(qs.map((q, k) => () => dset(`${P.setQ(setId)}/${q.id}`, qDoc(q, startOrder + k))), 6); }
-/**
- * Renders the set editor view for S.edit: set details form, question list, and add/import buttons.
- *
- * @return {string} HTML for the view, or a loading state while S.edit is null.
- */
 VIEWS.set = () => {
   const E = S.edit; if (!E) return `<main><div class="wrap"><p class="muted">Loading set…</p></div></main>`;
   const m = E.meta;
@@ -1567,14 +789,6 @@ VIEWS.set = () => {
   ${E.qs.length ? `<div class="list">${E.qs.map((q, i) => qCard(q, i, E.qs.length)).join("")}</div>` : `<div class="empty"><h3>This set has no questions yet</h3><p>Each question is single choice with four options and one correct answer.</p><button class="btn primary" data-act="addQ">Add the first question</button></div>`}
   </div></main>`;
 };
-/**
- * Renders one question card in the set editor with move, edit, and delete buttons and its options (correct marked).
- *
- * @param {!Object} q The question.
- * @param {number} i Its index in the set.
- * @param {number} n The number of questions in the set.
- * @return {string} HTML for the card.
- */
 function qCard(q, i, n) {
   return `<div class="qcard"><div class="row"><b>Q${i + 1}</b><span class="muted small">${[q.topic, q.subtype, q.difficulty, q.timeLimit ? q.timeLimit + " s" : ""].filter(Boolean).map(esc).join(", ")}</span><span class="spacer"></span>
   <button class="btn sm ghost" data-act="moveQ" data-i="${i}" data-d="-1" ${i ? "" : "disabled"} aria-label="Move up">Up</button><button class="btn sm ghost" data-act="moveQ" data-i="${i}" data-d="1" ${i < n - 1 ? "" : "disabled"} aria-label="Move down">Down</button>
@@ -1582,62 +796,25 @@ function qCard(q, i, n) {
   <div style="margin-top:6px;white-space:pre-wrap">${esc(q.prompt).slice(0, 400)}${q.img ? ' <span class="chip">Image prompt</span>' : ""}${q.refs && q.refs.length ? ` <span class="chip">${q.refs.length} reference${q.refs.length > 1 ? "s" : ""}</span>` : ""}</div>
   <div class="opts">${q.options.map((o, k) => `<div class="opt ${k === q.correct ? "right" : ""}">${LETTERS[k]}. ${esc(o)}</div>`).join("")}</div></div>`;
 }
-/**
- * Opens the built-in bank tab with the set being edited as the target for "Add to set".
- *
- * The target id is kept in S.bankTarget.
- */
 ACT.tabBank = () => { S.bankTarget = S.edit && S.edit.id; go("home", { tab: "bank" }); loadBank(); };
-/**
- * Saves the set details form (name, course, week, topic, description) to the set being edited.
- *
- * @return {!Promise<void>}
- */
 ACT.saveMeta = async () => {
   const E = S.edit; const m = { ...E.meta, title: $("#m_title").value.trim() || "Untitled set", course: $("#m_course").value.trim(), week: $("#m_week").value.trim(), topic: $("#m_topic").value.trim(), description: $("#m_desc").value.trim(), updatedAt: now(), count: E.qs.length };
   await dset(`${P.sets()}/${E.id}`, m); E.meta = m; toast("Details saved."); rerender();
 };
-/**
- * Swaps a question with its neighbour in the editor, then persists both new order values and touches the set.
- *
- * @param {!Element} el The button; data-i is the index and data-d is -1 (up) or 1 (down).
- * @return {!Promise<void>}
- */
 ACT.moveQ = async (el) => {
   const E = S.edit; const i = Number(el.dataset.i), j = i + Number(el.dataset.d); if (j < 0 || j >= E.qs.length) return;
   [E.qs[i], E.qs[j]] = [E.qs[j], E.qs[i]]; rerender();
   await Promise.all([dupd(`${P.setQ(E.id)}/${E.qs[i].id}`, { order: i }), dupd(`${P.setQ(E.id)}/${E.qs[j].id}`, { order: j })]); E.qs[i].order = i; E.qs[j].order = j;
   await touchSet(E.id, E.qs.length);
 };
-/**
- * Deletes a question from the set being edited after confirmation and updates the set count.
- *
- * @param {!Element} el The button; data-i is the question index.
- * @return {!Promise<void>}
- */
 ACT.delQ = async (el) => {
   const E = S.edit; const i = Number(el.dataset.i); if (!(await askConfirm("Delete question " + (i + 1) + "? This can't be undone.", "Delete question", true))) return;
   const [q] = E.qs.splice(i, 1); await ddel(`${P.setQ(E.id)}/${q.id}`); await touchSet(E.id, E.qs.length); rerender();
 };
 
 /* ---------- question editor dialog ---------- */
-/**
- * Opens the question editor dialog with a new blank draft (four empty options, no correct answer).
- */
 ACT.addQ = () => { S.qdraft = normQ({ options: ["", "", "", ""], correct: -1 }, S.edit.qs.length); S.qdraftIndex = -1; openDialog(qEditor); };
-/**
- * Opens the question editor dialog with a copy of an existing question as the draft.
- *
- * @param {!Element} el The button; data-i is the question index.
- */
 ACT.editQ = (el) => { const i = Number(el.dataset.i); S.qdraft = clone(S.edit.qs[i]); S.qdraftIndex = i; openDialog(qEditor); };
-/**
- * Renders the question editor dialog for the draft in S.qdraft.
- *
- * Covers prompt and image, four options with feedback, explanation, references, and metadata; upload controls
- * appear only when C.assets is available.
- * @return {string} HTML for the dialog.
- */
 function qEditor() {
   const q = S.qdraft;
   const canUp = !!C.assets;
@@ -1660,12 +837,7 @@ function qEditor() {
    <label class="f">Source<input id="q_src" value="${esc(q.source)}" placeholder="Who wrote this item, e.g. course staff"></label></div>
   <div class="row"><button class="btn primary big" data-act="saveQ">Save question</button></div></div></div>`;
 }
-/**
- * Copies the question editor's form fields into the draft S.qdraft.
- *
- * Called before any re-render so typed edits survive.
- * @return {!Object} The updated draft.
- */
+/** Every action that re-renders the question editor must call this first, or typed but unsaved edits are lost. */
 function readQForm() {
   const q = S.qdraft;
   q.prompt = $("#q_prompt").value; q.options = [0, 1, 2, 3].map((k) => $("#q_o" + k).value.trim()); q.optFeedback = [0, 1, 2, 3].map((k) => $("#q_f" + k).value.trim());
@@ -1674,12 +846,6 @@ function readQForm() {
   const t = $("#q_time").value.trim(); q.timeLimit = t ? Number(t) : null; q.source = $("#q_src").value.trim();
   return q;
 }
-/**
- * Validates and saves the draft question, appending it (with the next order) or replacing the edited one.
- *
- * Shows the validation errors as a toast instead when the question is invalid.
- * @return {!Promise<void>}
- */
 ACT.saveQ = async () => {
   const q = readQForm(); const errs = validateQ(q); if (errs.length) return toast("This question " + errs.join("; ") + ".");
   const E = S.edit; const order = S.qdraftIndex < 0 ? (E.qs.length ? Math.max(...E.qs.map((x) => x.order ?? 0)) + 1 : 0) : q.order;
@@ -1687,27 +853,9 @@ ACT.saveQ = async () => {
   if (S.qdraftIndex < 0) E.qs.push(q); else E.qs[S.qdraftIndex] = q;
   await touchSet(E.id, E.qs.length); S.dialog = null; toast("Question saved."); rerender();
 };
-/**
- * Removes the prompt image from the draft question.
- */
 ACT.qImgDel = () => { readQForm(); S.qdraft.img = ""; rerender(); };
-/**
- * Removes a reference from the draft question.
- *
- * @param {!Element} el The button; data-k is the reference index.
- */
 ACT.refDel = (el) => { readQForm(); S.qdraft.refs.splice(Number(el.dataset.k), 1); rerender(); };
-/**
- * Asks for a note and adds it to the draft question as a text reference.
- *
- * @return {!Promise<void>}
- */
 ACT.refText = async () => { readQForm(); const v = await askText("Add a note", [{ id: "text", label: "Note text", multiline: true }], "Add note", (x) => String(x.text || "").trim() ? null : "Write the note first."); if (!v) return; S.qdraft.refs.push({ kind: "text", title: "Note", text: v.text.trim() }); rerender(); };
-/**
- * Asks for an http(s) link and optional title and adds it to the draft question as a url reference.
- *
- * @return {!Promise<void>}
- */
 ACT.refUrl = async () => { readQForm(); const v = await askText("Add a link", [{ id: "url", label: "Link URL", type: "url", placeholder: "https://…" }, { id: "title", label: "Link title (optional)" }], "Add link", (x) => /^https?:\/\//i.test(String(x.url || "").trim()) ? null : "Links must start with http:// or https://"); if (!v) return; const u = v.url.trim(); S.qdraft.refs.push({ kind: "url", url: u, title: String(v.title || "").trim() || u }); rerender(); };
 const TEXT_TYPES = { md: "text/markdown", txt: "text/plain", csv: "text/csv", json: "application/json" };
 document.addEventListener("change", async (e) => {
@@ -1741,19 +889,8 @@ const JSON_HELP = `[
     "references": [{ "kind": "url", "title": "CLRS 7.2", "url": "https://example.edu/notes" }]
   }
 ]`;
-/**
- * Opens the JSON import dialog targeting the set being edited.
- */
 ACT.importQ = () => { S.importTarget = S.edit.id; S.importText = ""; S.importReport = null; openDialog(importDialog); };
-/**
- * Opens the JSON import dialog to create a new set.
- */
 ACT.importNewSet = () => { S.importTarget = null; S.importText = ""; S.importReport = null; openDialog(importDialog); };
-/**
- * Renders the JSON import dialog: text box, file chooser, Check and Import buttons, and the last check report.
- *
- * @return {string} HTML for the dialog.
- */
 function importDialog() {
   const r = S.importReport;
   return `<div class="dialog" style="max-width:820px"><div class="row"><h2 style="margin:0">Import questions from JSON</h2><span class="spacer"></span><button class="btn sm ghost" data-act="close">Cancel</button></div>
@@ -1763,18 +900,7 @@ function importDialog() {
   <div class="row" style="margin-top:10px"><button class="btn" data-act="impCheck">Check</button><button class="btn primary" data-act="impGo" ${r && r.ok.length ? "" : "disabled"}>Import ${r && r.ok.length ? r.ok.length + " question" + (r.ok.length === 1 ? "" : "s") : ""}</button></div>
   ${r ? `<div class="notice" style="margin-top:12px">${r.fatal ? esc(r.fatal) : `${r.ok.length} ready to import.${r.bad.length ? ` ${r.bad.length} skipped:` : ""}`}${r.bad.length ? `<ul class="small">${r.bad.slice(0, 12).map((b) => `<li>Item ${b.i + 1} ${esc(b.e.join("; "))}</li>`).join("")}</ul>` : ""}</div>` : ""}</div>`;
 }
-/**
- * Reads a chosen JSON file into S.importText and checks it.
- *
- * @param {!File} f The file.
- */
 function jsonFile(f) { f.text().then((t) => { S.importText = t; ACT.impCheck(true); }); }
-/**
- * Parses S.importText (an array, or an object with a questions array) and validates each question.
- *
- * Stores {ok, bad} or a fatal message in S.importReport and re-renders.
- * @param {boolean=} fromFile True when the text came from a file, so the text box is not read.
- */
 ACT.impCheck = (fromFile) => {
   if (fromFile !== true) S.importText = $("#imp").value;
   let arr; try { arr = JSON.parse(S.importText); } catch (e) { S.importReport = { ok: [], bad: [], fatal: "That isn't valid JSON: " + e.message }; return rerender(); }
@@ -1783,12 +909,6 @@ ACT.impCheck = (fromFile) => {
   const ok = [], bad = []; arr.forEach((o, i) => { const q = normQ(o, i); q.id = "q" + rid(9); const e = validateQ(q); e.length ? bad.push({ i, e }) : ok.push(q); });
   S.importReport = { ok, bad }; rerender();
 };
-/**
- * Imports the checked questions into the target set, creating an "Imported set" first when there is none.
- *
- * Appends after the current questions when the target is the set being edited, then opens that set.
- * @return {!Promise<void>}
- */
 ACT.impGo = async () => {
   const r = S.importReport; if (!r || !r.ok.length) return;
   let id = S.importTarget;
@@ -1800,31 +920,15 @@ ACT.impGo = async () => {
 };
 
 /* ===================== built-in bank ===================== */
-/**
- * Loads the built-in bank (up to 1000 questions) into S.bank sorted by order; on failure sets it empty and toasts.
- *
- * @return {!Promise<void>}
- */
 async function loadBank() {
   try { const docs = await dlist(P.bank, (q) => q.limit(1000)); S.bank = docs.map((d) => ({ ...clone(d), id: d._id })).sort((a, b) => (a.order ?? 0) - (b.order ?? 0)); }
   catch (e) { S.bank = []; toast(errMsg(e)); }
   S.bankSel = S.bankSel || new Set(); if (S.view === "home") rerender();
 }
-/**
- * Returns the bank questions matching the filters in S.bankF (topic, difficulty, subtype, chapter, text search).
- *
- * @return {!Array<!Object>} The matching questions.
- */
 function bankFiltered() {
   const f = S.bankF || {}; const t = (f.q || "").toLowerCase();
   return (S.bank || []).filter((q) => (!f.topic || q.topic === f.topic) && (!f.diff || q.difficulty === f.diff) && (!f.sub || q.subtype === f.sub) && (!f.ch || String(q.chapter) === f.ch) && (!t || (q.prompt + " " + q.options.join(" ")).toLowerCase().includes(t)));
 }
-/**
- * Renders the "Built-in bank" tab: the admin file loader, filters, selection toolbar, and the question list.
- *
- * Shows S.bankShow questions at a time (default 60).
- * @return {string} HTML for the tab.
- */
 function homeBank() {
   if (!S.bank) return `<p class="muted">Loading the built-in bank…</p>`;
   const loader = S.isAdmin ? `<div class="panel" style="margin-bottom:16px"><h3>${S.bank.length ? "Replace or reload the built-in bank" : "Load the built-in bank"}</h3>
@@ -1833,22 +937,8 @@ function homeBank() {
     ${S.bankPreview ? `<div class="notice" style="margin-top:12px">${S.bankPreview.fatal ? esc(S.bankPreview.fatal) : `Found ${S.bankPreview.ok.length} valid questions${S.bankPreview.bad.length ? `, ${S.bankPreview.bad.length} invalid (skipped)` : ""}.`}
       ${S.bankPreview.ok.length ? `<div class="row" style="margin-top:8px"><button class="btn primary" data-act="bankWrite">Save ${S.bankPreview.ok.length} questions as the built-in bank</button><button class="btn ghost" data-act="bankCancel">Cancel</button></div>` : ""}</div>` : ""}</div>` : "";
   if (!S.bank.length) return loader + `<div class="empty"><h3>The built-in bank hasn't been loaded yet</h3><p>${S.isAdmin ? "Load it above from the original AlgoArena file." : "Ask the AlgoArena owner to load it. Meanwhile you can create your own sets."}</p></div>`;
-  /**
-   * Returns the distinct non-empty values of a bank question field, sorted.
-   *
-   * @param {string} k The field name.
-   * @return {!Array<*>} The values.
-   */
   const uniq = (k) => [...new Set(S.bank.map((q) => q[k]).filter((x) => x !== "" && x != null))].sort((a, b) => (typeof a === "number" ? a - b : String(a).localeCompare(String(b))));
   const f = S.bankF || {}; const list = bankFiltered(); const sel = S.bankSel; const shown = list.slice(0, S.bankShow || 60);
-  /**
-   * Renders one filter option, selected when it equals the current filter value.
-   *
-   * @param {string} k The filter key in S.bankF.
-   * @param {*} v The option value.
-   * @param {string} lab The option label.
-   * @return {string} HTML for the option.
-   */
   const opt = (k, v, lab) => `<option value="${esc(v)}" ${String(f[k] || "") === String(v) ? "selected" : ""}>${esc(lab)}</option>`;
   const target = S.bankTarget && (S.sets || []).find((s) => s._id === S.bankTarget);
   return loader + `<div class="fgrid" style="margin-bottom:12px">
@@ -1869,61 +959,18 @@ document.addEventListener("input", (e) => {
   const bf = e.target.closest("[data-bf]"); if (bf) { S.bankF = { ...(S.bankF || {}), [bf.dataset.bf]: bf.value }; S.bankShow = 60; clearTimeout(homeBank.t); homeBank.t = setTimeout(() => { const pos = bf.selectionStart; const k = bf.dataset.bf; rerender(); const n = $(`[data-bf="${k}"]`); if (n && n.tagName === "INPUT") { n.focus(); try { n.setSelectionRange(pos, pos); } catch {} } }, bf.tagName === "INPUT" ? 250 : 0); }
 });
 document.addEventListener("change", (e) => { const c = e.target.closest("[data-bsel]"); if (c) { c.checked ? S.bankSel.add(c.dataset.bsel) : S.bankSel.delete(c.dataset.bsel); const b = $(".tabs"); rerender(); } });
-/**
- * Selects every bank question that matches the current filters.
- */
 ACT.bankAll = () => { bankFiltered().forEach((q) => S.bankSel.add(q.id)); rerender(); };
-/**
- * Clears the bank selection.
- */
 ACT.bankNone = () => { S.bankSel.clear(); rerender(); };
-/**
- * Shows 60 more bank questions.
- */
 ACT.bankMore = () => { S.bankShow = (S.bankShow || 60) + 60; rerender(); };
-/**
- * Returns copies of the selected bank questions in bank order, each with a new id, its bankId, and a source.
- *
- * @return {!Array<!Object>} The questions, ready to write into a set.
- */
 function selectedBankQs() { const order = new Map(S.bank.map((q, i) => [q.id, i])); return [...S.bankSel].filter((id) => order.has(id)).sort((a, b) => order.get(a) - order.get(b)).map((id) => { const q = clone(S.bank[order.get(id)]); q.source = q.source || "built-in"; q.bankId = id; q.id = "q" + rid(9); return q; }); }
-/**
- * Creates a new set from the selected bank questions.
- *
- * @param {string} title The set title.
- * @return {!Promise<string>} The new set id.
- */
 async function bankMakeSet(title) {
   const qs = selectedBankQs(); const id = "set_" + rid(10);
   await dset(`${P.sets()}/${id}`, { title, course: "", week: "", topic: "", description: "Selected from the built-in bank.", createdAt: now(), updatedAt: now(), count: qs.length });
   await writeQuestions(id, qs); return id;
 }
-/**
- * Makes a new set from the bank selection and opens it in the editor.
- *
- * @return {!Promise<void>}
- */
 ACT.bankToSet = async () => { const id = await bankMakeSet("Built-in bank selection, " + new Date().toLocaleDateString()); S.bankSel.clear(); go("set", { id }); await openSetEditor(id); };
-/**
- * Makes a new set from the bank selection and immediately launches it as a live game.
- *
- * @return {!Promise<void>}
- */
 ACT.bankHost = async () => { const id = await bankMakeSet("Live: bank selection, " + new Date().toLocaleDateString()); S.bankSel.clear(); await ACT.launch({ dataset: { id } }); };
-/**
- * Appends the selected bank questions to the target set (S.bankTarget) and opens that set.
- *
- * @return {!Promise<void>}
- */
 ACT.bankAddTo = async () => { const id = S.bankTarget; const set = await loadSet(id); const qs = selectedBankQs(); await writeQuestions(id, qs, set.qs.length); await touchSet(id, set.qs.length + qs.length); S.bankSel.clear(); S.bankTarget = null; toast(`Added ${qs.length} questions.`); go("set", { id }); await openSetEditor(id); };
-/**
- * Parses a file chosen to load the built-in bank and stores a preview in S.bankPreview.
- *
- * Accepts a JSON array (or {questions}) or an HTML file whose QUESTION_BANK array literal is read with
- * parseJsLiteral. Valid questions get ids b0001, b0002, and so on.
- * @param {!File} f The file.
- * @return {!Promise<void>}
- */
 async function bankFile(f) {
   const text = await f.text(); let arr = null; let fatal = null;
   try {
@@ -1935,15 +982,7 @@ async function bankFile(f) {
   if (arr) arr.forEach((o, i) => { const q = normQ(o, i); q.id = "b" + String(i + 1).padStart(4, "0"); const e = validateQ(q); e.length ? bad.push({ i, e }) : ok.push(q); });
   S.bankPreview = { ok, bad, fatal, file: f.name }; rerender();
 }
-/**
- * Discards the bank file preview.
- */
 ACT.bankCancel = () => { S.bankPreview = null; rerender(); };
-/**
- * Writes the previewed questions as the built-in bank, deletes old bank questions not in it, and updates meta/bank.
- *
- * @return {!Promise<void>}
- */
 ACT.bankWrite = async () => {
   const pv = S.bankPreview; if (!pv) return; const old = S.bank || [];
   toast("Saving the built-in bank…", 60000);
@@ -1957,15 +996,6 @@ ACT.bankWrite = async () => {
 /* ===================== Live Classroom: shared helpers ===================== */
 const CLOCK = { offset: null, rtt: null, samples: [], pending: new Map() };
 let NAMED = null; let NAMED_UNSUBS = [];
-/**
- * Joins the realtime room channel for a game code, replacing any channel already joined.
- *
- * The host answers clock "ping" messages with its time; a player records "pong" samples to estimate CLOCK.offset
- * and rtt, re-reads the room on "nudge", and logs a reconnect event after the connection returns.
- * @param {string} code The room code.
- * @param {boolean} asHost Whether this device is the host.
- * @return {!Promise<?Object>} The channel (also stored in NAMED), or null when unavailable.
- */
 async function joinNamed(code, asHost) {
   await leaveNamed();
   if (!C.room) return null;
@@ -1982,114 +1012,36 @@ async function joinNamed(code, asHost) {
   }
   return NAMED;
 }
-/**
- * Unsubscribes all channel listeners and leaves the realtime channel, ignoring errors.
- *
- * @return {!Promise<void>}
- */
 async function leaveNamed() { NAMED_UNSUBS.forEach((u) => { try { u(); } catch {} }); NAMED_UNSUBS = []; if (NAMED) { try { await NAMED.leave(); } catch {} } NAMED = null; }
-/**
- * Sends n clock ping messages about 180 to 340 ms apart; replies are handled by the pong listener in joinNamed.
- *
- * @param {number=} n The number of pings (default 5).
- * @return {!Promise<void>}
- */
 async function syncClock(n = 5) {
   if (!NAMED) return;
   for (let k = 0; k < n; k++) { const id = rid(8); CLOCK.pending.set(id, now()); NAMED.emit("ping", { n: id }).catch(() => {}); await sleep(180 + Math.random() * 160); }
 }
 /* Route B: every timing decision uses the database server's clock. Room times are server milliseconds
    (shownSrv, openNowSrv); this device estimates server time from a measured offset. */
-/**
- * Returns the estimated server time, falling back to the local clock.
- *
- * @return {number} Milliseconds since the epoch.
- */
 const hostNowEst = () => (DB && DB.serverNow ? DB.serverNow() : now());
-/**
- * Returns when a room's current question opens for answering, in server milliseconds.
- *
- * Prefers openNowSrv, then shownSrv plus the reading time, then the older openAt or shownAt fields.
- * @param {?Object} r The room document.
- * @return {?number} The open time, or null when r is missing.
- */
+/** openAt/shownAt are only a fallback for older room documents; current rooms leave them null and use the server-time fields. */
 const openOf = (r) => (!r ? null : r.openNowSrv != null ? r.openNowSrv : r.shownSrv != null ? r.shownSrv + (r.readS || 0) * 1000 : r.openAt != null ? r.openAt : r.shownAt);
-/**
- * Returns the answer deadline of a room's current question: its open time plus the time limit.
- *
- * @param {?Object} r The room document.
- * @return {number} The deadline in server milliseconds.
- */
 const deadlineOf = (r) => openOf(r) + ((r && r.q && r.q.T) || 0) * 1000;
-/**
- * Converts a room's open time from server time to this device's local clock.
- *
- * @param {?Object} r The room document.
- * @return {number} The open time in local milliseconds.
- */
 function pOpenLocal(r) { return openOf(r) - (DB && DB.serverOffset ? DB.serverOffset() : 0); }
-/**
- * Returns the host's record of a participant's answers.
- *
- * @param {string} uid The participant id.
- * @return {!Object} The answers, or an empty object.
- */
 const ansOf = (uid) => (S.host && S.host.ans && S.host.ans[uid]) || {};
-/**
- * Broadcasts a "nudge" so players re-read the room document immediately.
- */
 function nudge() { if (NAMED) NAMED.emit("nudge", { at: now() }).catch(() => {}); }
 let TICK = null;
-/**
- * Starts the shared 200 ms interval timer, stopping any previous one.
- *
- * @param {function()} fn The function to run each tick.
- */
 function startTicker(fn) { stopTicker(); TICK = setInterval(fn, 200); }
-/**
- * Stops the shared interval timer.
- */
 function stopTicker() { clearInterval(TICK); TICK = null; }
-/**
- * Leaves live mode: stops the timer and audio loop, leaves the channel, and unsubscribes host and player listeners.
- *
- * @param {boolean=} keepState When true, S.host and S.play are kept; otherwise they are cleared.
- */
 function leaveLive(keepState) {
   stopTicker(); AUDIO.stopLoop(); leaveNamed();
   if (S.host && S.host.unsubs) S.host.unsubs.forEach((u) => { try { u(); } catch {} });
   if (S.play && S.play.unsubs) S.play.unsubs.forEach((u) => { try { u(); } catch {} });
   if (!keepState) { S.host = null; S.play = null; }
 }
-/**
- * Returns the countdown ring markup at full length.
- *
- * @param {number} T The number shown in the middle (the time limit in seconds).
- * @param {string=} cls Extra CSS classes.
- * @return {string} HTML for the ring.
- */
 function ringHtml(T, cls = "") { const C2 = 2 * Math.PI * 50; return `<div class="ring ${cls}" id="ring" aria-live="off"><svg viewBox="0 0 120 120"><circle class="track" cx="60" cy="60" r="50"/><circle class="bar" id="ringbar" cx="60" cy="60" r="50" stroke-dasharray="${C2}" stroke-dashoffset="0"/></svg><div class="num" id="ringnum">${T}</div></div>`; }
-/**
- * Updates the countdown ring's number and arc, ticking audibly and marking "hurry" in the last five seconds.
- *
- * @param {number} remainMs The time left in milliseconds.
- * @param {number} T The time limit in seconds.
- * @param {boolean} quiet When true, no tick sound or hurry style.
- */
 function updateRing(remainMs, T, quiet) {
   const n = $("#ringnum"), b = $("#ringbar"), r = $("#ring"); if (!n || !b) return;
   const s = Math.max(0, Math.ceil(remainMs / 1000)); const C2 = 2 * Math.PI * 50;
   if (n.textContent !== String(s)) { n.textContent = s; if (!quiet && s <= 5 && s > 0) AUDIO.tick(true); }
   b.setAttribute("stroke-dashoffset", String(C2 * (1 - clamp(remainMs / (T * 1000), 0, 1)))); r.classList.toggle("hurry", !quiet && s <= 5);
 }
-/**
- * Renders the four answer buttons with optional correct/dim/mine marks, counts, and click handling.
- *
- * @param {!Array<string>} opts The option texts.
- * @param {{locked: (boolean|undefined), correct: (?number|undefined), mine: (?number|undefined),
- *     interactive: (boolean|undefined), counts: (!Array<number>|undefined)}=} o Display options.
- * @return {string} HTML for the answers.
- */
 function answerCards(opts, o = {}) {
   return `<div class="answers${o.locked ? " locked" : ""}">${opts.map((t, k) => {
     const cls = ["ans", "c" + k]; if (o.correct != null) cls.push(k === o.correct ? "correct" : "dim"); else if (o.mine != null && o.mine !== k) cls.push("dim");
@@ -2097,28 +1049,11 @@ function answerCards(opts, o = {}) {
     return `<button class="${cls.join(" ")}" ${o.interactive ? `data-act="answer" data-i="${k}"` : "disabled"} aria-label="Option ${LETTERS[k]}: ${esc(t)}"><span class="g">${GLYPH[k]}</span><span class="txt">${esc(t)}</span>${o.counts ? `<span class="count">${o.counts[k] || 0}</span>` : ""}${o.mine === k && o.correct == null ? '<span class="badge">Your answer</span>' : ""}</button>`;
   }).join("")}</div>`;
 }
-/**
- * Renders the answer distribution bar chart with the correct option highlighted.
- *
- * @param {!Array<number>} dist The answer count per option.
- * @param {?number} correct The correct option index.
- * @return {string} HTML for the chart.
- */
 function distBars(dist, correct) {
   const max = Math.max(1, ...dist);
   return `<div class="distbars" role="img" aria-label="Answer distribution: ${dist.map((d, k) => LETTERS[k] + " " + d).join(", ")}">${dist.map((d, k) => `<div class="b c${k} ${correct === k ? "right" : ""}" style="height:${Math.max(4, (d / max) * 100)}%"><span>${d}</span></div>`).join("")}</div>
   <div class="answers" style="grid-template-columns:repeat(4,1fr);margin-top:6px">${[0, 1, 2, 3].map((k) => `<div class="sw c${k}" style="margin:0 auto">${GLYPH[k]}</div>`).join("")}</div>`;
 }
-/**
- * Renders a question's reference materials: notes and images inline, videos as players, others as links.
- *
- * Links and videos carry data attributes so opening them is logged by logRef.
- * @param {?Array<!Object>} refs The references.
- * @param {number} q The question index.
- * @param {string=} phase The logging phase (default "live").
- * @param {string=} sid The session id (default "").
- * @return {string} HTML, or "" when there are no references.
- */
 function refsHtml(refs, q, phase = "live", sid = "") {
   if (!refs || !refs.length) return "";
   return `<div class="refs">${refs.map((r, k) => {
@@ -2131,99 +1066,34 @@ function refsHtml(refs, q, phase = "live", sid = "") {
   }).join("")}</div>`;
 }
 document.addEventListener("play", (e) => { const v = e.target.closest && e.target.closest("video[data-vref]"); if (v) logRef(Number(v.dataset.q), Number(v.dataset.vref), "video", v.dataset.phase, v.dataset.sid); }, true);
-/**
- * Logs a reference link open and opens it in a new tab.
- *
- * @param {!Element} el The link; its data attributes give question, index, phase, and session.
- */
 ACT.openRef = (el) => { logRef(Number(el.dataset.q), Number(el.dataset.k), "", el.dataset.phase, el.dataset.sid); window.open(el.getAttribute("href"), "_blank", "noopener"); };
 /* Records a reference open for research. During a game it goes through the normal event buffer; after the game (review on Home)
    it is appended to the participant's public record, but only while that record still belongs to the same session. */
-/**
- * Records that a question reference was opened, for research logging.
- *
- * @param {number} q Question index the reference belongs to.
- * @param {number} k Index of the reference within the question.
- * @param {string} kind Reference kind tag (for example "video"); omitted from the event when empty.
- * @param {string=} phase Phase label stored on the event; defaults to "live".
- * @param {string=} sid Session id; required for the post-game path, which appends to S.uid's pub record only if it still has this sid.
- */
 function logRef(q, k, kind, phase, sid) {
   const p = S.play; const ev = { t: "reference_opened", at: now(), q, ref: k, phase: phase || "live", ...(kind ? { kind } : {}) };
   if (p && (!sid || sid === p.sid)) { p.evBuf.push(ev); clearTimeout(p.evT); p.evT = setTimeout(flushEvents, 1200); return; }
   if (!sid || !S.uid) return;
   dget(P.pub(S.uid)).then((pub) => { if (pub && pub.sid === sid) return dupd(P.pub(S.uid), { events: [...(pub.events || []), ev].slice(-MAX_EVENTS) }); }).catch(() => {});
 }
-/**
- * Turns a scoreboard map into a ranked list.
- *
- * Sorts by score descending, then cumulative correct-answer time ascending, then name, and numbers the ranks from 1.
- *
- * @param {?Object<string, !Object>} board Map of uid to board entry ({s, st, c, n, ft, ...}).
- * @param {?function(string): string} names Resolves a uid to a display name; "Player" is the fallback.
- * @return {!Array<!Object>} Board entries with uid, name and rank added, in rank order.
- */
+/** Ties break on lower ft (summed elapsed ms of correct answers), then on name. */
 function rankList(board, names) {
   return Object.entries(board || {}).map(([uid, b]) => ({ uid, name: (names && names(uid)) || "Player", ...b })).sort((a, b) => b.s - a.s || (a.ft || 0) - (b.ft || 0) || a.name.localeCompare(b.name)).map((x, i) => ({ ...x, rank: i + 1 }));
 }
-/**
- * Formats a number with its English ordinal suffix (1st, 2nd, 11th, 23rd).
- *
- * @param {number} n The number to format.
- * @return {string} The number followed by its suffix.
- */
 const ordinal = (n) => n + (["th", "st", "nd", "rd"][(n % 100 - 20) % 10] || ["th", "st", "nd", "rd"][n % 100] || "th");
-/**
- * Renders the top rows of a ranked leaderboard as HTML.
- *
- * @param {!Array<!Object>} rows Ranked rows from rankList().
- * @param {?string} meUid Uid whose row is highlighted as the viewer's.
- * @param {number=} limit Maximum number of rows shown; defaults to 5.
- * @param {string=} key Count-up key prefix; when set, each score animates from its previous value via cnt().
- * @return {string} The leaderboard markup.
- */
 function boardHtml(rows, meUid, limit = 5, key = "") {
   return `<div class="board">${rows.slice(0, limit).map((r) => `<div class="brow ${r.uid === meUid ? "me" : ""}" data-flip="b-${esc(r.uid)}"><span class="rk">${r.rank}</span><span>${esc(r.name)}${r.st >= 2 ? `<span class="stk">${r.st} in a row</span>` : ""}</span><span class="sc">${key ? cnt(key + r.uid, r.prev ?? r.s, r.s) : r.s.toLocaleString()}</span></div>`).join("")}</div>`;
 }
 const COUNTED = new Set();
-/**
- * Returns markup for a number that animates from one value to another once.
- *
- * If the key was already animated (it is in COUNTED) or the values are equal, the final value is returned as plain text.
- *
- * @param {string} key Unique key for this count-up.
- * @param {number} from Starting value.
- * @param {number} to Final value.
- * @return {string} A formatted number or a span carrying data-count-* attributes.
- */
 function cnt(key, from, to) { if (COUNTED.has(key) || from === to) return Number(to).toLocaleString(); return `<span data-count-key="${esc(key)}" data-count-to="${to}" data-count-from="${from}">${Number(from).toLocaleString()}</span>`; }
-/**
- * Starts the count-up animation for every pending data-count-key element on the page.
- *
- * Each key is added to COUNTED so it animates only once.
- */
 function runCountUps() { $$("[data-count-key]").forEach((el) => { if (COUNTED.has(el.dataset.countKey)) return; COUNTED.add(el.dataset.countKey); countUp(el, Number(el.dataset.countFrom), Number(el.dataset.countTo)); }); }
 
 /* ===================== Live Classroom: host ===================== */
-/**
- * Loads a question set and opens the host launch view for it.
- *
- * Shows a toast instead when the set is empty or a question fails validateQ(). Stores the set in S.launchSet.
- *
- * @param {!Element} el The clicked element; its data-id names the set.
- * @return {!Promise<void>}
- */
 ACT.launch = async (el) => {
   const set = await loadSet(el.dataset.id); if (!set.qs.length) return toast("Add questions to this set first.");
   const bad = set.qs.map((q, i) => [i, validateQ(q)]).filter(([, e]) => e.length);
   if (bad.length) return toast(`Question ${bad[0][0] + 1} ${bad[0][1].join("; ")}. Fix it before hosting.`);
   S.launchSet = set; go("launch", {});
 };
-/**
- * Renders the launch view, where the host sets answer and reading times before creating a room.
- *
- * @return {string} The view markup for S.launchSet.
- */
 VIEWS.launch = () => {
   const s = S.launchSet; const per = s.qs.filter((q) => q.timeLimit).length;
   return `<main><div class="wrap" style="max-width:760px"><button class="btn sm ghost" data-act="home">Back to Home</button>
@@ -2234,29 +1104,10 @@ VIEWS.launch = () => {
   <div class="notice small">Players are told before joining that you will see their answers, timing, and an AI-generated learning report for this session.</div>
   <div class="row"><button class="btn primary big" data-act="createRoom">Create room</button></div></div></div></main>`;
 };
-/**
- * Returns the host-salted pseudonymous participant id for a uid, cached in S.host.pids.
- *
- * @param {string} uid The participant's user id.
- * @return {!Promise<string>} An id of the form "P-" plus 12 hex digits.
- */
+/** Pseudonymous research id salted with the host's profile salt; finishSession() repeats this formula inline, so the two must stay identical. */
 async function pidOf(uid) { const H = S.host; H.pids = H.pids || {}; if (!H.pids[uid]) H.pids[uid] = "P-" + (await sha256hex((S.profile.salt || "") + ":" + uid)).slice(0, 12); return H.pids[uid]; }
-/**
- * Computes a content key for a question from its prompt, image and options.
- *
- * @param {!Object} q The question.
- * @return {!Promise<string>} The first 16 hex digits of the SHA-256 hash.
- */
+/** Keyed on content rather than id, so a question copied into another set (copies get new ids) still counts as a repeat exposure. */
 async function qkeyOf(q) { return (await sha256hex([q.prompt, q.img, ...q.options].join("\u241e"))).slice(0, 16); }
-/**
- * Creates a live room for S.launchSet and starts hosting it.
- *
- * Reads the time inputs, offers to end a still-open previous room, picks an unused room code, generates the session key pair,
- * writes the question content, session metadata and room documents, initializes S.host, then calls startHost().
- *
- * @param {!HTMLButtonElement} btn The Create room button; disabled while working.
- * @return {!Promise<void>}
- */
 ACT.createRoom = async (btn) => {
   btn.disabled = true;
   const set = S.launchSet; const T = clamp(Math.round(Number($("#l_t").value) || DEFAULT_T), 5, 300);
@@ -2284,13 +1135,6 @@ ACT.createRoom = async (btn) => {
   S.host = { sid, qs, priv: kp.priv, room, meta, players: new Map(), dec: {}, observed: {}, expo: {}, showDash: false };
   await startHost(); go("host");
 };
-/**
- * Subscribes the host to its room, answers and player records, then starts the host ticker.
- *
- * Each snapshot updates S.host and calls hostChanged(). Also joins the named realtime channel as host and starts the lobby music.
- *
- * @return {!Promise<void>}
- */
 async function startHost() {
   const H = S.host; H.unsubs = [];
   H.unsubs.push(DB.doc(P.room(S.uid)).onSnapshot((s) => { const d = s.exists ? s.data() : null; if (!d || d.sid !== H.sid) return; if (!H.pendingWrite) H.room = d; hostChanged(); }, (e) => console.warn(e)));
@@ -2310,39 +1154,17 @@ async function startHost() {
   if (H.room.status === "lobby") AUDIO.startLoop();
 }
 let hostRenderT = null;
-/**
- * Decrypts newly arrived answers and schedules a debounced host view rerender.
- */
 function hostChanged() {
   const H = S.host; if (!H) return;
   decryptCurrent().then(() => { if (S.view !== "host") return; clearTimeout(hostRenderT); hostRenderT = setTimeout(() => rerender(), 120); });
 }
-/**
- * Decrypts every player's sealed answer for one question into S.host.dec.
- *
- * A decrypted choice is kept only if its question index and session id match and it is 0 to 3; otherwise null is stored.
- *
- * @param {number=} idx Question index; defaults to the room's current question.
- * @return {!Promise<void>}
- */
+/** A sealed answer counts only if its embedded question index and session id match, so a ciphertext replayed from another question or session is discarded. */
 async function decryptCurrent(idx) {
   const H = S.host; const i = idx ?? H.room.qIndex; if (i < 0) return;
   for (const [uid, p] of H.players) { const a = ansOf(uid)[i]; const key = uid + ":" + i;
     if (a && a.ct && !(key in H.dec)) { try { const o = await unseal(H.priv, a.ct); H.dec[key] = o && o.q === i && o.sid === H.sid && o.a >= 0 && o.a <= 3 ? o.a : null; } catch { H.dec[key] = null; } } }
 }
-/**
- * Lists the players who have submitted a sealed answer for a question.
- *
- * @param {number} i Question index.
- * @return {!Array<string>} Uids of the players who answered.
- */
 function answeredUids(i) { const H = S.host; return [...H.players.keys()].filter((u) => { const a = ansOf(u)[i]; return a && a.ct; }); }
-/**
- * Runs the host's periodic timer step during a question.
- *
- * Updates the countdown ring, rerenders when answers open, and closes the question once everyone has answered or the deadline
- * has passed by more than 600 ms.
- */
 function hostTick() {
   const H = S.host; if (!H || S.view !== "host") return; const r = H.room;
   if (r.status === "question") {
@@ -2354,15 +1176,7 @@ function hostTick() {
     if (!H.closing && (remain < -600 || (n > 0 && ans >= n))) { H.closing = true; closeQuestion(ans >= n && remain > 0 ? "all_answered" : "time_up").finally(() => { H.closing = false; }); }
   }
 }
-/**
- * Writes a patch to the room document with an incremented version.
- *
- * Applies it locally first (server-time sentinels replaced by hostNowEst()), then re-reads the room to pick up server times,
- * nudges players and rerenders.
- *
- * @param {!Object} patch Room fields to change.
- * @return {!Promise<void>}
- */
+/** The local copy replaces server-time sentinels with hostNowEst() until the re-read returns the real server values. */
 async function hostWrite(patch) {
   const H = S.host; const full = { ...H.room, ...patch, v: (H.room.v || 0) + 1 };
   const local = {}; for (const [k, v] of Object.entries(full)) local[k] = DB.isServerTime && DB.isServerTime(v) ? hostNowEst() : v;
@@ -2370,47 +1184,18 @@ async function hostWrite(patch) {
   try { await dset(P.room(S.uid), full); const fresh = await dget(P.room(S.uid)); if (fresh && fresh.v === full.v) H.room = fresh; } finally { H.pendingWrite = false; }
   nudge(); rerender();
 }
-/**
- * Appends a host event to the session metadata, keeping the last MAX_EVENTS; write errors are ignored.
- *
- * @param {string} t Event type.
- * @param {!Object=} extra Extra event fields.
- * @return {!Promise<void>}
- */
 async function hostEvent(t, extra = {}) { const H = S.host; H.meta.hostEvents = [...(H.meta.hostEvents || []), { t, at: now(), ...extra }].slice(-MAX_EVENTS); await dupd(`${P.sessions()}/${H.sid}`, { hostEvents: H.meta.hostEvents }).catch(() => {}); }
-/**
- * Starts the game at the first question, provided at least one player has joined.
- *
- * @return {!Promise<void>}
- */
 ACT.hStart = async () => { const H = S.host; if (!H.players.size) return toast("Wait for at least one player to join."); AUDIO.stopLoop(); H.meta.startAt = now(); await dupd(`${P.sessions()}/${H.sid}`, { startAt: H.meta.startAt }); await showQuestion(0); };
-/**
- * Shows a question to the room, starting its reading phase, and logs the event.
- *
- * @param {number} i Index of the question in S.host.qs.
- * @return {!Promise<void>}
- */
 async function showQuestion(i) {
   const H = S.host; const q = H.qs[i]; const T = q.timeLimit || H.room.defaultT; const R = H.room.readS || 0;
   H.phaseSeen = null;
   await hostWrite({ status: "question", qIndex: i, q: { idx: i, id: q.id, prompt: q.prompt, img: q.img || "", options: q.options, T, R, topic: q.topic || "" }, shownSrv: DB.serverTime(), openNowSrv: null, shownAt: null, openAt: null, deadline: null, closed: null, reveal: null });
   hostEvent("question_shown", { q: i, qid: q.id, read_s: R });
 }
-/**
- * Skips the remaining reading time so answers open immediately.
- *
- * @return {!Promise<void>}
- */
 ACT.hOpenNow = async () => {
   const H = S.host; const r = H.room; if (r.status !== "question" || hostNowEst() >= openOf(r)) return;
   await hostWrite({ openNowSrv: DB.serverTime() }); hostEvent("reading_skipped", { q: r.qIndex });
 };
-/**
- * Closes answering for the current question and publishes the answer distribution.
- *
- * @param {string} reason Why it closed, such as "time_up", "all_answered" or "host_stopped".
- * @return {!Promise<void>}
- */
 async function closeQuestion(reason) {
   const H = S.host; const r = H.room; if (r.status !== "question") return;
   await decryptCurrent(r.qIndex);
@@ -2418,27 +1203,11 @@ async function closeQuestion(reason) {
   await hostWrite({ status: "closed", closed: { dist, answered: answeredUids(r.qIndex).length, n: H.players.size, at: now(), reason } });
   hostEvent("answers_closed", { q: r.qIndex, reason });
 }
-/**
- * Closes the current question at the host's request.
- *
- * @return {!Promise<void>}
- */
 ACT.hClose = () => closeQuestion("host_stopped");
-/**
- * Loads and caches one shard of the host's per-participant question exposure counts.
- *
- * @param {number} shard Shard number, taken from the first hex digit of the question key.
- * @return {!Promise<!Object>} The shard, shaped {m: Object<string, number>}.
- */
 async function loadExpoShard(shard) { const H = S.host; if (!H.expo[shard]) H.expo[shard] = clone((await dget(`${P.expo()}/s${shard}`)) || { m: {} }); return H.expo[shard]; }
 /**
- * Reveals the current question's answer and scores it.
- *
- * Closes the question if still open, computes each player's elapsed time and points (500 to 1000 when correct), updates the board
- * and exposure counts, writes the per-question research log once, then publishes the reveal with summary statistics.
- *
- * @param {?HTMLButtonElement} btn The Reveal button, disabled while working; may be null.
- * @return {!Promise<void>}
+ * Idempotent per question: when boardAsOf >= qIndex the board, exposure counts and research log are not written again.
+ * Elapsed time prefers the server timestamp (a.srv) and falls back to the device's monotonic delta (a.mono).
  */
 ACT.hReveal = async (btn) => {
   btn && (btn.disabled = true);
@@ -2478,36 +1247,12 @@ ACT.hReveal = async (btn) => {
   AUDIO.reveal(); setTimeout(() => AUDIO.board(), 700);
   hostEvent("correct_revealed", { q: i });
 };
-/**
- * Advances to the next question, or ends the game after the last one.
- *
- * @return {!Promise<void>}
- */
 ACT.hNext = async () => { const H = S.host; const i = H.room.qIndex + 1; if (i < H.qs.length) await showQuestion(i); else await ACT.hEnd(null, true); };
-/**
- * Ends the game for everyone, asking for confirmation unless it ended naturally.
- *
- * @param {?Element} el The clicked element (unused).
- * @param {*} natural Only a literal true skips the confirmation; click handlers pass an event here.
- * @return {!Promise<void>}
- */
 ACT.hEnd = async (el, natural) => {
   const H = S.host; if (natural !== true && !(await askConfirm("End the game now for everyone? Questions not yet played are skipped.", "End game", true))) return; // the click handler passes the event as the 2nd argument, so only a literal true means "ended by finishing the last question"
   await finishSession(H.room, false);
 };
-/**
- * Toggles the host's live dashboard panel.
- */
 ACT.hDash = () => { S.host.showDash = !S.host.showDash; rerender(); };
-/**
- * Marks a room ended and writes the final participant, event and board records to its session.
- *
- * Works for the current game or a stale room found at creation. Unless silent, it then starts AI report generation.
- *
- * @param {!Object} room The room document to finish.
- * @param {boolean} silent True to skip AI report generation.
- * @return {!Promise<void>}
- */
 async function finishSession(room, silent) {
   const sid = room.sid; const isCur = S.host && S.host.sid === sid;
   const endedAt = now();
@@ -2526,13 +1271,6 @@ async function finishSession(room, silent) {
   if (isCur) { rerender(); AUDIO.board(); }
   if (!silent) startAiForSession(sid).catch((e) => console.warn("AI generation", e));
 }
-/**
- * Looks for a hosted room or joined game that is still open, so Home can offer to resume it.
- *
- * Sets S.resumeRoom or S.resumePlay; after a device takeover it resumes the game directly.
- *
- * @return {!Promise<void>}
- */
 async function autoResume() {
   S.resumeRoom = null; S.resumePlay = null;
   try {
@@ -2543,26 +1281,8 @@ async function autoResume() {
   } catch (e) { console.warn(e); }
   if (S.view === "home") rerender();
 }
-/**
- * Resumes hosting the room found by autoResume().
- *
- * @return {!Promise<void>}
- */
 ACT.resumeHost = () => resumeHost(S.resumeRoom);
-/**
- * Rejoins the game found by autoResume().
- *
- * @return {!Promise<void>}
- */
 ACT.resumePlay = () => enterRoom(S.resumePlay);
-/**
- * Rebuilds S.host from a room's stored session, keys and question content, then resumes hosting.
- *
- * Records a host device takeover when S.tookOverFrom is set; shows a toast if the records are missing.
- *
- * @param {!Object} r The room document.
- * @return {!Promise<void>}
- */
 async function resumeHost(r) {
   const meta = await dget(`${P.sessions()}/${r.sid}`); const keys = await dget(`${P.keys()}/${r.sid}`);
   if (!meta || !keys) return toast("This game's records are missing, so it can't be resumed.");
@@ -2571,28 +1291,11 @@ async function resumeHost(r) {
   if (S.tookOverFrom) { const ht = [...(r.hostTakeovers || []), { at: now(), q: r.qIndex, from: S.tookOverFrom.from }]; S.tookOverFrom = null; S.host.room.hostTakeovers = ht; await dset(P.room(S.uid), { ...S.host.room, v: (r.v || 0) + 1 }); hostEvent("device_takeover", { q: r.qIndex }); }
   S.resumeRoom = null; await startHost(); go("host");
 }
-/**
- * Returns a player's display name from the host's player list, or "Player".
- *
- * @param {string} uid The player's user id.
- * @return {string} The display name.
- */
 function hostName(uid) { const p = S.host.players.get(uid); return (p && p.name) || "Player"; }
-/**
- * Returns a player's board entry from the host's room, or a zeroed entry.
- *
- * @param {string} uid The player's user id.
- * @return {!Object} The entry ({s, st, c, n, ...}).
- */
 function playerStats(uid) {
   const H = S.host; const b = (H.room.board || {})[uid] || { s: 0, st: 0, c: 0, n: 0 };
   return b;
 }
-/**
- * Renders the host's live dashboard: question stats, answer distribution, participant table and leaderboard.
- *
- * @return {string} The dashboard markup.
- */
 function hostDash() {
   const H = S.host, r = H.room; const i = r.qIndex; const n = H.players.size; const ans = i >= 0 ? answeredUids(i) : [];
   const rts = []; for (const u of ans) { const a = ansOf(u)[i]; const el = a.srv != null ? a.srv - openOf(r) : null; if (el != null) rts.push(Math.max(0, el)); }
@@ -2614,20 +1317,9 @@ function hostDash() {
     <div class="panel"><h3>Leaderboard</h3>${rows.length ? boardHtml(rows, null, 10) : '<p class="muted">Scores appear after the first reveal.</p>'}
     ${(r.hostTakeovers || []).length ? `<p class="small" style="margin-top:12px"><span class="chip warn">Host switched device ×${r.hostTakeovers.length}</span></p>` : ""}</div></div>`;
 }
-/**
- * Renders the host stage for the room's current status (lobby, question, closed, reveal or ended).
- *
- * @return {string} The view markup.
- */
 VIEWS.host = () => {
   const H = S.host; if (!H) return `<main><div class="wrap"><p>Loading…</p></div></main>`;
   const r = H.room; const n = H.players.size; const st = r.status;
-  /**
-   * Renders the stage bar with room chips, sound, dashboard and end-game controls.
-   *
-   * @param {string} inner Extra markup placed after the room and player chips.
-   * @return {string} The bar markup.
-   */
   const bar = (inner) => `<div class="stagebar"><span class="chip">Room ${esc(r.code)}</span><span class="chip">${n} player${n === 1 ? "" : "s"}</span>${inner}<span class="spacer"></span>
     <button class="btn ghost" data-act="mute" aria-pressed="${AUDIO.muted}">${AUDIO.muted ? "Sound off" : "Sound on"}</button>${st !== "lobby" && st !== "ended" ? `<button class="btn ghost" data-act="hDash">${H.showDash ? "Hide dashboard" : "Show dashboard"}</button>` : ""}
     ${st !== "ended" ? '<button class="btn ghost" data-act="hEnd">End game</button>' : ""}</div>`;
@@ -2663,23 +1355,8 @@ VIEWS.host = () => {
   }
   return `<div class="stage"><div class="stage-inner">${body}${H.showDash && st !== "lobby" && st !== "ended" ? hostDash() : ""}</div></div>`;
 };
-/**
- * Runs after the host view renders: a timer tick and any pending score count-ups.
- */
 AFTER.host = () => { const H = S.host; if (!H) return; hostTick(); runCountUps(); };
-/**
- * Builds the join link for a room code.
- *
- * @param {string} code The room code.
- * @return {string} The page URL with ?join=code, or "" when ARTIFACT_URL is empty.
- */
 function joinUrl(code) { return ARTIFACT_URL ? ARTIFACT_URL + "?join=" + code : ""; }
-/**
- * Renders a QR code for a text as inline SVG using the global qrcode library.
- *
- * @param {string} text Text to encode; a placeholder is used when empty.
- * @return {string} SVG markup, a fallback message when the library is missing, or "" on error.
- */
 function qrSvg(text) {
   const payload = text || "AlgoArena room code";
   if (typeof window.qrcode !== "function") return `<div style="color:#0E1433;display:grid;place-items:center;height:100%;text-align:center;font-weight:700">QR code unavailable here. Share the room code.</div>`;
@@ -2690,12 +1367,6 @@ function qrSvg(text) {
 }
 
 /* ===================== Live Classroom: participant ===================== */
-/**
- * Joins the open room matching the entered code after checking the format and consent box.
- *
- * @param {!HTMLButtonElement} btn The Join button; disabled while working.
- * @return {!Promise<void>}
- */
 ACT.join = async (btn) => {
   const code = ($("#code").value || "").trim().toUpperCase();
   if (!/^[A-Z0-9]{6}$/.test(code)) return toast("Room codes have 6 letters and numbers.");
@@ -2708,26 +1379,11 @@ ACT.join = async (btn) => {
     await enterRoom(rooms[0], true);
   } catch (e) { btn.disabled = false; throw e; }
 };
-/**
- * Returns the user's stored key pair, generating and saving one if missing.
- *
- * @return {!Promise<{priv: *, pub: *, at: number}>} The key record.
- */
 async function ensureMyKey() {
   let k = await dget(`${P.keys()}/me`);
   if (!k || !k.priv) { const kp = await genKeyPair(); k = { priv: kp.priv, pub: kp.pub, at: now() }; await dset(`${P.keys()}/me`, k); }
   return k;
 }
-/**
- * Joins a room as a participant and opens the play view.
- *
- * Creates or updates the user's pub record (logging a reconnect or device takeover), records the game in joined, sets up S.play
- * and its listeners, syncs the clock, and reloads any answers already locked in.
- *
- * @param {!Object} room The room document.
- * @param {boolean=} consented True when the consent box was just confirmed.
- * @return {!Promise<void>}
- */
 async function enterRoom(room, consented) {
   const key = await ensureMyKey();
   const existing = await dget(P.pub(S.uid));
@@ -2751,14 +1407,6 @@ async function enterRoom(room, consented) {
   for (let k = 0; k <= (room.qIndex ?? -1); k++) dget(`${P.answers(room.hostId)}/${S.uid}_${room.sid}_${k}`).then((a) => { if (a && S.play && S.play.sid === room.sid) { S.play.myAns = { ...(S.play.myAns || {}), [k]: a }; if (S.view === "play") rerender(); } }).catch(() => {});
   startTicker(playTick); S.resumePlay = null; go("play");
 }
-/**
- * Handles a room update on the participant side.
- *
- * Ignores older versions, logs shown and revealed events, plays sounds, saves reveals for review, loads the review list and
- * watches the AI report when the game ends, then rerenders.
- *
- * @param {!Object} d The room document.
- */
 function onPlayRoom(d) {
   const p = S.play; if (!p || d.sid !== p.sid) return; const prev = p.room; if (prev && (d.v || 0) < (prev.v || 0)) return;
   p.room = d;
@@ -2772,11 +1420,6 @@ function onPlayRoom(d) {
   if (S.view === "play") rerender();
 }
 /* v2.1: each revealed question is copied to the participant's own private records, so they can review it after the game. */
-/**
- * Saves a revealed question, with the participant's own result, to their private review records.
- *
- * @param {!Object} d The room document in reveal status.
- */
 function saveReview(d) {
   const p = S.play; if (!p || !d.reveal || !d.q) return; p.savedRv = { ...(p.savedRv || {}), [d.qIndex]: true };
   const rv = d.reveal; const b = (d.board || {})[S.uid]; const last = b && b.last && (b.last.q === d.qIndex || (b.last.q == null && d.boardAsOf === d.qIndex)) ? b.last : null;
@@ -2785,20 +1428,7 @@ function saveReview(d) {
   p.rvLocal = { ...(p.rvLocal || {}), [d.qIndex]: doc };
   dset(`${P.joined()}/${p.sid}/rv/q${String(d.qIndex).padStart(4, "0")}`, doc).catch((e) => { console.warn(e); p.savedRv[d.qIndex] = false; });
 }
-/**
- * Merges the loaded review list with reviews saved locally this game, by question index.
- *
- * @return {!Array<!Object>} Review items sorted by question index.
- */
 function mergedReview() { const p = S.play; const m = new Map(((p && p.review) || []).map((x) => [x.i, x])); for (const x of Object.values((p && p.rvLocal) || {})) m.set(x.i, x); return [...m.values()].sort((a, b) => a.i - b.i); }
-/**
- * Renders review items as expandable question cards with the answer, explanation and references.
- *
- * @param {?Array<!Object>} items Review items.
- * @param {string} sid Session id passed to refsHtml() for reference logging.
- * @param {string=} emptyMsg Message shown when there are no items.
- * @return {string} The review markup.
- */
 function reviewHtml(items, sid, emptyMsg) {
   if (!items || !items.length) return `<p class="muted">${esc(emptyMsg || "No questions were revealed in this game, so there is nothing to review.")}</p>`;
   return `<div class="review">${items.map((x) => {
@@ -2811,51 +1441,21 @@ function reviewHtml(items, sid, emptyMsg) {
       ${(x.refs || []).length ? `<h3>Go deeper</h3>${refsHtml(x.refs, x.i, "post", sid)}` : '<p class="muted small">No references have been added to this question yet.</p>'}</details>`;
   }).join("")}</div>`;
 }
-/**
- * Opens a dialog reviewing every revealed question of a past game.
- *
- * @param {!Element} el The clicked element; its data-sid names the session.
- * @return {!Promise<void>}
- */
 ACT.myReview = async (el) => {
   const sid = el.dataset.sid; const j = (S.joined || []).find((x) => x.sid === sid) || {};
   const items = (await dlist(`${P.joined()}/${sid}/rv`)).sort((a, b) => a.i - b.i);
   openDialog(() => `<div class="dialog" style="max-width:760px"><div class="row"><h2 style="margin:0">${esc(j.title || "Live game")}</h2><span class="spacer"></span><button class="btn sm ghost" data-act="close">Close</button></div>
     <p class="muted small">Every revealed question, with its explanation and references, whether you got it right or not.</p>${reviewHtml(items, sid, "Answer reviews are saved for games played on AlgoArena 2.1 or later.")}</div>`);
 };
-/**
- * Buffers a participant event and schedules flushEvents() in 1.2 seconds.
- *
- * @param {string} t Event type.
- * @param {!Object} extra Extra event fields.
- */
 function pEvent(t, extra) {
   const p = S.play; if (!p) return; p.evBuf.push({ t, at: now(), ...extra });
   clearTimeout(p.evT); p.evT = setTimeout(flushEvents, 1200);
 }
-/**
- * Appends buffered participant events to the user's pub record, keeping the last MAX_EVENTS.
- *
- * On failure the events are put back in the buffer.
- *
- * @return {!Promise<void>}
- */
 async function flushEvents() {
   const p = S.play; if (!p || !p.evBuf.length) return; const buf = p.evBuf; p.evBuf = [];
   const cur = (p.me && p.me.events) || []; try { await dupd(P.pub(S.uid), { events: [...cur, ...buf].slice(-MAX_EVENTS) }); } catch (e) { p.evBuf = [...buf, ...p.evBuf]; }
 }
-/**
- * Returns the participant's own locked answer for a question, if any.
- *
- * @param {number} i Question index.
- * @return {*} The answer record, or a falsy value.
- */
 function myAnswer(i) { const p = S.play; return p && p.myAns && p.myAns[i]; }
-/**
- * Runs the participant's periodic timer step during an unanswered question.
- *
- * Updates the countdown ring, records the monotonic time answers opened, and rerenders when answers open or time runs out.
- */
 function playTick() {
   const p = S.play; if (!p || S.view !== "play") return; const r = p.room;
   if (r.status === "question" && !myAnswer(r.qIndex) && !p.submitting[r.qIndex]) {
@@ -2867,15 +1467,6 @@ function playTick() {
     if (remain <= 0 && p.timedOut !== r.qIndex) { p.timedOut = r.qIndex; rerender(); }
   }
 }
-/**
- * Submits the participant's chosen option, sealed with the room's public key.
- *
- * Refuses during reading time and after the deadline. On a write error it recovers an answer already stored, or marks the
- * question timed out when the database refused it after answers opened.
- *
- * @param {!Element} el The clicked option; its data-i is the option index.
- * @return {!Promise<void>}
- */
 ACT.answer = async (el) => {
   const p = S.play; const r = p.room; const i = r.qIndex; const k = Number(el.dataset.i);
   if (r.status !== "question" || myAnswer(i) || (p.submitting && p.submitting[i] != null)) return;
@@ -2898,22 +1489,7 @@ ACT.answer = async (el) => {
   }
   rerender();
 };
-/**
- * Finds the signed-in player's row on the room leaderboard.
- *
- * @param {!Object} r The live room record; its `board` field is ranked with rankList().
- * @return {{me: (!Object|undefined), n: number}} The player's ranked row (undefined if absent) and the
- *     number of ranked players.
- */
 function myRank(r) { const rows = rankList(r.board, () => ""); const me = rows.find((x) => x.uid === S.uid); return { me, n: rows.length }; }
-/**
- * Renders the participant's live game screen for the current room status.
- *
- * Builds the lobby, question (reading, answering, sealed, or timed out), reveal, or game-over view from
- * S.play; returns an empty string when no game is joined.
- *
- * @return {string} The view's HTML.
- */
 VIEWS.play = () => {
   const p = S.play; if (!p) return "";
   const r = p.room; const st = r.status; let body = "";
@@ -2948,23 +1524,9 @@ VIEWS.play = () => {
   }
   return `<div class="stage"><div class="stage-inner">${top}${body}</div></div>`;
 };
-/**
- * Runs after the play view renders: advances the question timer and starts pending count-up animations.
- */
 AFTER.play = () => { const p = S.play; if (!p) return; playTick(); runCountUps(); };
 
 /* ===================== session data, dashboard, research export ===================== */
-/**
- * Loads one finished or in-progress session from the host's private data.
- *
- * Reads the session metadata, the per-question logs (sorted by q_index), the chunked question content, and
- * every stored AI report.
- *
- * @param {string} sid The session ID.
- * @return {!Promise<{sid: string, meta: !Object, logs: !Array<!Object>, qs: !Array<!Object>, ai: !Object}>}
- *     The session bundle used by the dashboard, export, and AI coach.
- * @throws {!Error} When the session metadata does not exist.
- */
 async function loadSessionData(sid) {
   const meta = await dget(`${P.sessions()}/${sid}`); if (!meta) throw new Error("Session not found.");
   const logs = (await dlist(P.sLog(sid))).sort((a, b) => a.q_index - b.q_index);
@@ -2972,28 +1534,11 @@ async function loadSessionData(sid) {
   const ai = {}; for (const d of await dlist(P.sAi(sid))) ai[d._id] = d;
   return { sid, meta: clone(meta), logs: logs.map(clone), qs, ai };
 }
-/**
- * Opens the session dashboard for the clicked session.
- *
- * Leaves any live game, loads the session data, then in the background imports participant-generated
- * reports, late events, and resumes unfinished AI reports.
- *
- * @param {!Element} el The clicked element; `data-id` holds the session ID.
- * @return {!Promise<void>}
- */
 ACT.openSession = async (el) => { leaveLive(); S.sess = null; go("session", { id: el.dataset.id }); S.sess = await loadSessionData(el.dataset.id); rerender(); importParticipantReports().catch(() => {}); importLateEvents(S.sess).catch(() => {}); resumePendingAi().catch(() => {}); };
 /* v2.1: events that reach a participant's public record after the end-of-session snapshot (reference opens from the
    post-game review, and anything still in a device's 1.2 s event buffer when the host ended the game) are copied
    into the session while that record still belongs to this session; it is replaced when the participant joins another game. */
-/**
- * Copies participant events that arrived after the session snapshot into the session's lateEvents.
- *
- * Only events from public records still tagged with this session are taken; duplicates are skipped and the
- * list is capped at the last 4000 entries before it is written back.
- *
- * @param {?Object} X A session bundle from loadSessionData(); mutated in place.
- * @return {!Promise<void>}
- */
+/** Participant events keep landing in pub/<uid> after finishSession(); a pub record is read only while its sid is still this session, since joining another game overwrites it. */
 async function importLateEvents(X) {
   if (!X || !X.meta) return; const m = X.meta; const key = (e) => [e.pid, e.t, e.at, e.q ?? "", e.ref ?? ""].join("|");
   const have = new Set([...(m.participantEvents || []), ...(m.lateEvents || [])].map(key)); const add = [];
@@ -3004,14 +1549,6 @@ async function importLateEvents(X) {
   if (!add.length) return; m.lateEvents = [...(m.lateEvents || []), ...add].slice(-4000);
   await dupd(`${P.sessions()}/${X.sid}`, { lateEvents: m.lateEvents }).catch((e) => console.warn(e));
 }
-/**
- * Derives per-question statistics and the per-participant leaderboard from a session bundle.
- *
- * @param {!Object} ctx A session bundle from loadSessionData().
- * @return {{perQ: !Array<!Object>, people: !Array<!Object>}} Per-question counts, accuracy, answer
- *     distribution and response times, and participants sorted by score with rank, totals, median response
- *     time, and device-takeover count.
- */
 function sessDerived(ctx) {
   const parts = ctx.meta.participants || []; const byUid = new Map(parts.map((p) => [p.uid, { ...p, s: 0, c: 0, a: 0, rts: [], tk: 0 }]));
   const perQ = ctx.logs.map((l) => {
@@ -3024,12 +1561,6 @@ function sessDerived(ctx) {
   const people = [...byUid.values()].sort((a, b) => b.s - a.s).map((p, i) => ({ ...p, rank: i + 1, med: median(p.rts) }));
   return { perQ, people };
 }
-/**
- * Renders an SVG chart of accuracy bars and a median response-time line per question.
- *
- * @param {!Array<!Object>} perQ Per-question rows from sessDerived().
- * @return {string} SVG markup, or an empty string when there are no questions.
- */
 function rtChart(perQ) {
   if (!perQ.length) return "";
   const W = 640, H = 200, pad = 34; const maxT = Math.max(...perQ.map((p) => p.T || 1)) * 1000; const bw = (W - pad * 2) / perQ.length;
@@ -3041,12 +1572,6 @@ function rtChart(perQ) {
    <path d="${line}" fill="none" stroke="var(--brand)" stroke-width="2.5"/>${pts.filter((x) => x[1] != null).map((x) => `<circle cx="${x[0].toFixed(1)}" cy="${x[1].toFixed(1)}" r="3.5" fill="var(--brand)"/>`).join("")}
    <line x1="${pad}" x2="${W - pad}" y1="${H - pad}" y2="${H - pad}" stroke="var(--line)"/><text x="${pad}" y="14" font-size="11" fill="var(--muted)">Bars: accuracy (0 to 100%). Line: median response time (0 to ${maxT / 1000} s).</text></svg>`;
 }
-/**
- * Renders the host's session dashboard: summary, research export, per-question and participant tables,
- * AI report controls, takeover events, and session metadata.
- *
- * @return {string} The view's HTML, or a loading message while S.sess is not loaded.
- */
 VIEWS.session = () => {
   const X = S.sess; if (!X) return `<main><div class="wrap"><p class="muted">Loading session…</p></div></main>`;
   const m = X.meta; const { perQ, people } = sessDerived(X);
@@ -3077,20 +1602,7 @@ VIEWS.session = () => {
    <p><b>Started</b> ${fmtDate(m.startAt)}; <b>ended</b> ${fmtDate(m.endAt)}; <b>set</b> ${esc([m.setMeta && m.setMeta.course, m.setMeta && m.setMeta.week && "Week " + m.setMeta.week, m.setMeta && m.setMeta.topic].filter(Boolean).join(", ") || "no course details")}</p></div>
   </div></main>`;
 };
-/**
- * Returns to the home view on the tab named by the clicked element and reloads home data.
- *
- * @param {!Element} el The clicked element; `data-tab` names the tab.
- */
 ACT.tabTo = (el) => { go("home", { tab: el.dataset.tab }); loadHome(); };
-/**
- * Renders the AI report cell of a participant row on the session dashboard.
- *
- * @param {?Object} a The participant's AI report record, or null if none exists.
- * @param {string} uid The participant's account ID, used by the View, download, and Retry buttons.
- * @return {string} HTML for the status: not started, view and download buttons, generating, or failed
- *     with a Retry button.
- */
 function aiCell(a, uid) {
   if (!a) return '<span class="muted small">Not started</span>';
   if (a.status === "ready") return `<button class="btn sm" data-act="aiView" data-uid="${esc(uid)}">View</button> <button class="btn sm ghost" data-act="aiDl" data-uid="${esc(uid)}">.md</button>`;
@@ -3110,17 +1622,6 @@ const TIMESTAMP_SEMANTICS = {
   host_observed_at_ms: "Host device clock when the host first received the submission; an upper bound that includes sync latency.",
   scoring: "Correct and within T after answers open: round(500 + 500·(1 − min(t,T)/T)); otherwise 0. The database accepts answers until T plus 250 ms after answers open.",
 };
-/**
- * Builds the research export tables for the given sessions.
- *
- * Loads each session (importing late events first) and flattens it into session, question, participant,
- * exposure, submission, event, and derived-metric rows. Participants appear by pseudonymous pid; the host
- * gets a pid hashed from the profile salt.
- *
- * @param {!Array<string>} sids Session IDs to export.
- * @param {boolean} incNames Whether to include participant display names.
- * @return {!Promise<!Object<string, !Array<!Object>>>} Row arrays keyed by table name.
- */
 async function buildExport(sids, incNames) {
   const out = { sessions: [], questions: [], participants: [], exposures: [], submissions: [], events: [], per_question: [], per_participant: [] };
   const hostPid = "H-" + (await sha256hex((S.profile.salt || "") + ":host:" + S.uid)).slice(0, 12);
@@ -3155,23 +1656,9 @@ const COLS = {
   events: ["session_id", "actor", "type", "at_ms", "q_index", "detail"],
   per_question: ["session_id", "q_index", "question_id", "exposures", "answered", "correct", "accuracy", "dist_a", "dist_b", "dist_c", "dist_d", "median_rt_ms", "mean_rt_ms"],
 };
-/**
- * Builds the README.md placed in the research export zip.
- *
- * @param {boolean} incNames Whether display names were included, which changes the identity note.
- * @return {string} Markdown describing identity, files, timestamp semantics, and schema notes.
- */
 function readme(incNames) {
   return `# AlgoArena research export\n\nExported ${new Date().toISOString()} by AlgoArena ${APP.version}.\n\n## Identity\n\nParticipants are identified by \`pid\`, a pseudonym: the first 12 hex characters of SHA-256(host-private salt + account id). The same person keeps the same pid across this host's sessions. Emails and sign-in tokens are never exported.${incNames ? " Display names were included at the exporter's request; treat these files as identifiable." : " Display names are excluded."}\n\n## Files\n\n- sessions.csv: one row per session, with timer, reading time and scoring configuration, and content_hash (a hash of the question content, answers, explanations and references used).\n- questions.csv: question content snapshot as played (content is stored separately from behavior).\n- participants.csv: pid, join time, consent time.\n- exposures.csv: one row per participant per question shown (raw evidence plus first-attempt fields). Live Classroom allows one scored submission per exposure.\n- submissions.csv: one row per answer, with raw timestamps.\n- events.csv: auditable event log (question shown, answer selected or submitted, correct answer revealed, reference opened, reconnect, device takeover, session completed).\n- derived_per_question.csv and derived_per_participant.csv: metrics computed from the raw rows above.\n\n## Timestamp semantics\n\n${Object.entries(TIMESTAMP_SEMANTICS).map(([k, v]) => `- ${k}: ${v}`).join("\n")}\n\n## Notes\n\n- exposure_number counts this pseudonymous participant's exposures to the same question content (question_key, a hash of prompt, image and options) across this host's sessions.\n- AI-generated learning reports are interpretations and are not part of this export.\n- reference_opened events carry phase: live (opened on the reveal screen) or post (opened from the participant's review after the game). Events that reach a participant's record after the session ended (post-game opens, and events still buffered on a device when the host ended the game) are collected when the host opens the session dashboard or exports; they are lost if the participant has since joined another game.\n- schema_version 2 (AlgoArena 2.1) adds the reading phase. Rows from earlier sessions get answers_open_at_ms = question_shown_at_ms and submitted_before_open = false.\n- schema_version 3 (AlgoArena 3, Firebase): timing fields use the Firestore server clock; elapsed_ms includes network delay from the device; client_elapsed_ms is the device's own unlock-to-tap measurement.\n`;
 }
-/**
- * Builds and downloads a research export as one JSON file or as a zip of CSV files plus README.
- *
- * @param {!Array<string>} sids Session IDs to export.
- * @param {string} fmt "json" for a JSON file; any other value produces the CSV zip.
- * @param {boolean} incNames Whether to include participant display names.
- * @return {!Promise<*>} The result of saveFile().
- */
 async function doExport(sids, fmt, incNames) {
   const d = await buildExport(sids, incNames); const stamp = new Date().toISOString().slice(0, 16).replace(/[:T]/g, "-"); const base = sids.length === 1 ? `algoarena-${sids[0]}` : `algoarena-sessions-${stamp}`;
   if (fmt === "json") return saveFile(base + ".json", JSON.stringify({ schema: "algoarena-research-export", schema_version: 3, exported_at: new Date().toISOString(), app_version: APP.version, identity: incNames ? "pseudonymous ids plus display names" : "pseudonymous ids only", timestamp_semantics: TIMESTAMP_SEMANTICS, ...d, derived_metrics: { per_question: d.per_question, per_participant: d.per_participant }, per_question: undefined, per_participant: undefined }, null, 2));
@@ -3181,38 +1668,11 @@ async function doExport(sids, fmt, incNames) {
     { name: "derived_per_question.csv", data: csv(d.per_question, COLS.per_question) }, { name: "derived_per_participant.csv", data: csv(d.per_participant, ppcols) }]);
   return saveFile(base + "-csv.zip", zip);
 }
-/**
- * Exports the open session in the clicked button's format, honoring the Include display names checkbox.
- *
- * @param {!Element} el The clicked button; `data-fmt` holds the format.
- * @return {!Promise<*>} The result of doExport().
- */
 ACT.exportOne = (el) => doExport([S.sess.sid], el.dataset.fmt, !!($("#incNames") && $("#incNames").checked));
-/**
- * Exports every finished session in the clicked button's format, without display names.
- *
- * @param {!Element} el The clicked button; `data-fmt` holds the format.
- * @return {!Promise<void>}
- */
 ACT.exportAll = async (el) => { const sids = (S.sessions || []).filter((s) => s.endAt).map((s) => s._id); if (!sids.length) return toast("No finished sessions to export."); toast("Preparing export…"); await doExport(sids, el.dataset.fmt, false); };
 
 /* ===================== AI Learning Coach ===================== */
-/**
- * Builds the document ID of a participant's sealed report, replacing unsafe characters with underscores.
- *
- * @param {string} sid The session ID.
- * @param {string} uid The participant's account ID.
- * @return {string} The report document ID.
- */
 const repId = (sid, uid) => (sid + "_" + uid).replace(/[^A-Za-z0-9_\-.~:@+]/g, "_");
-/**
- * Builds the evidence snapshot for one participant's AI learning report.
- *
- * @param {!Object} X A session bundle from loadSessionData().
- * @param {!Object} part The participant entry from the session metadata.
- * @return {!Object} Session details, totals (answered, correct, median response time, score, rank),
- *     per-topic counts, and one row per played question with the participant's answer and outcome.
- */
 function personalSnapshot(X, part) {
   const rows = X.logs.map((l) => { const q = X.qs[l.q_index] || {}; const s = l.submissions.find((x) => x.uid === part.uid);
     return { n: l.q_index + 1, topic: q.topic || "", subtype: q.subtype || "", difficulty: q.difficulty || "", prompt: (q.prompt || "(image-only question)").slice(0, 300), correct_answer: q.options ? q.options[q.correct] : "",
@@ -3224,49 +1684,17 @@ function personalSnapshot(X, part) {
   return { session_id: X.sid, set_title: X.meta.setTitle, date: new Date(X.meta.createdAt).toISOString().slice(0, 10), display_name: part.name, pid: part.pid,
     totals: { questions: rows.length, answered: ans.length, correct: cor.length, median_rt_s: ans.length ? +(median(ans.map((r) => r.response_time_s)) || 0).toFixed(1) : null, score: me.s, rank: me.rank, players: people.length }, by_topic: topics, questions: rows };
 }
-/**
- * Picks up to six library resources matching a snapshot's topics and missed questions.
- *
- * @param {!Object} snap A snapshot from personalSnapshot().
- * @return {!Array<{id: string, title: string, url: string, tags: *, match: number}>} Ranked candidates.
- */
 function candidatesFor(snap) {
   const text = snap.questions.map((q) => [q.topic, q.subtype, q.prompt, q.outcome !== "correct" ? q.topic + " " + q.prompt + " " + q.correct_answer : ""].join(" ")).join(" ");
   return rankResources(libItems(), text, 6).map((r) => ({ id: r.id, title: r.title, url: r.url, tags: r.tags, match: r.score }));
 }
-/**
- * Parses JSON from model output, stripping code fences and text outside the outermost braces.
- *
- * @param {*} t The raw model text.
- * @return {*} The parsed value.
- * @throws {!SyntaxError} When the text is not valid JSON.
- */
 function parseJsonText(t) { const s = String(t || "").replace(/^\s*```(?:json)?/i, "").replace(/```\s*$/, "").trim(); const a = s.indexOf("{"), b = s.lastIndexOf("}"); return JSON.parse(a >= 0 ? s.slice(a, b + 1) : s); }
-/**
- * Sends a prompt to the AI service and parses the reply as JSON.
- *
- * Retries up to three times with growing back-off, but only on rate_limited errors.
- *
- * @param {string} prompt The prompt text.
- * @param {string} sid The session ID passed to the service.
- * @param {string} kind The report kind ("personal" or "class").
- * @return {!Promise<{json: *, model: ?string, tier: ?string}>} The parsed reply and the model used.
- * @throws {*} The service error, or the last rate-limit error after three attempts.
- */
 async function sampleJson(prompt, sid, kind) {
   let last; for (let k = 0; k < 3; k++) {
     try { const r = await C.sample(prompt, { modelTier: "default", cache: false, sid, kind }); return { json: parseJsonText(r.text), model: r.modelApplied || null, tier: r.modelTierApplied || null }; }
     catch (e) { last = e; if (e && e.code === "rate_limited") { await sleep(2500 * (k + 1)); continue; } throw e; } // retry only when the AI service did not process the request (no tokens used)
   } throw last;
 }
-/**
- * Builds the Learning Coach prompt for one participant's report.
- *
- * @param {!Object} snap A snapshot from personalSnapshot().
- * @param {!Array<!Object>} cands Candidate resources from candidatesFor().
- * @param {boolean} strict Unused by the current prompt text.
- * @return {string} The prompt.
- */
 function personalPrompt(snap, cands, strict) {
   return `You are the AlgoArena Learning Coach. Write a short learning report for one student after a live algorithms quiz.
 Use ONLY the evidence below. The evidence is a record of answers and timing; it is not a measurement of the student's ability.
@@ -3286,40 +1714,13 @@ ${JSON.stringify({ totals: snap.totals, by_topic: snap.by_topic, questions: snap
 CANDIDATES:
 ${JSON.stringify(cands.map((c) => ({ id: c.id, title: c.title, keywords: c.tags })))}`;
 }
-/**
- * Formats the observed-evidence bullet lines of a personal report.
- *
- * @param {!Object} snap A snapshot from personalSnapshot().
- * @return {!Array<string>} Markdown bullet lines.
- */
 function evidenceLines(snap) {
   const t = snap.totals; const topics = Object.entries(snap.by_topic).sort((a, b) => b[1].total - a[1].total).slice(0, 4).map(([k, v]) => `${k} ${v.correct}/${v.total}`).join(", ");
   return [`- Answered ${t.answered} of ${t.questions} questions; ${t.correct} correct (${pct(t.correct, t.questions)}).`, `- Median response time ${t.median_rt_s == null ? "not available" : t.median_rt_s + " s"}; score ${Number(t.score || 0).toLocaleString()}${t.rank ? `, rank ${t.rank} of ${t.players}` : ""}.`, topics ? `- By topic (correct/total): ${topics}.` : ""].filter(Boolean);
 }
-/**
- * Composes a personal report as Markdown and trims it to at most 400 words.
- *
- * Trims list items first, then summary sentences, then truncates the summary to 25 words.
- *
- * @param {!Object} snap A snapshot from personalSnapshot().
- * @param {!Object} j The parsed model reply.
- * @param {!Array<!Object>} res The chosen resources to list.
- * @return {string} The report Markdown.
- */
 function composePersonal(snap, j, res) {
-  /**
-   * Normalizes a model list field to at most three trimmed, non-empty strings.
-   *
-   * @param {*} a The field value; non-arrays become an empty list.
-   * @return {!Array<string>} The cleaned items.
-   */
   const L = (a) => (Array.isArray(a) ? a : []).map((x) => String(x).trim()).filter(Boolean).slice(0, 3);
   const parts = { summary: String(j.performance_summary || "").trim(), kp: L(j.knowledge_points), weak: L(j.weak_or_risky_areas), conf: L(j.possible_confusions), next: L(j.next_steps) };
-  /**
-   * Assembles the report Markdown from the current (possibly trimmed) parts.
-   *
-   * @return {string} The report Markdown.
-   */
   const build = () => [`# Learning report: ${snap.display_name}`, `${snap.set_title}, ${snap.date}.`, "## Observed evidence", ...evidenceLines(snap),
     "## AI interpretation (generated; not a measurement of ability)", parts.summary,
     parts.kp.length ? `**Knowledge points covered:** ${parts.kp.join("; ")}` : "", parts.weak.length ? `**Possible weak or risky areas:** ${parts.weak.join("; ")}` : "",
@@ -3331,50 +1732,17 @@ function composePersonal(snap, j, res) {
     parts.summary = parts.summary.split(/\s+/).slice(0, 25).join(" ") + "…"; md = build(); break; }
   return md;
 }
-/**
- * Generates one personal report with the AI service and composes it.
- *
- * @param {!Object} snap A snapshot from personalSnapshot().
- * @param {!Array<!Object>} cands Candidate resources from candidatesFor().
- * @return {!Promise<{md: string, json: *, model: ?string, tier: ?string, resources: !Array<string>,
- *     words: number}>} The report and its provenance.
- */
 async function generatePersonal(snap, cands) {
   let r = await sampleJson(personalPrompt(snap, cands, false), snap.session_id, "personal");
-  /**
-   * Keeps up to three unique candidates the model chose, falling back to the top candidate.
-   *
-   * @param {!Object} j The parsed model reply.
-   * @return {!Array<!Object>} The chosen resources.
-   */
   const pick = (j) => { const ids = (Array.isArray(j.resource_ids) ? j.resource_ids : []).map(String); let res = ids.map((id) => cands.find((c) => c.id === id)).filter(Boolean); res = [...new Map(res.map((x) => [x.id, x])).values()].slice(0, 3); if (!res.length) res = cands.slice(0, 1); return res; };
   let res = pick(r.json); let md = composePersonal(snap, r.json, res);
   return { md, json: r.json, model: r.model, tier: r.tier, resources: res.map((x) => x.id), words: words(md) };
 }
-/**
- * Encrypts a report payload with the participant's public key and writes it to the room's report
- * collection. Does nothing when the participant has no public key.
- *
- * @param {string} sid The session ID.
- * @param {!Object} part The participant entry from the session metadata.
- * @param {!Object} payload The report payload; its `status` is also stored in clear.
- * @return {!Promise<void>}
- */
 async function deliverReport(sid, part, payload) {
   if (!part.pubKey) return;
   const sealed = await seal(part.pubKey, payload);
   await dset(`${P.rep(S.uid)}/${repId(sid, part.uid)}`, { sid, status: payload.status, at: now(), sealed });
 }
-/**
- * Generates, stores, and delivers one participant's AI report.
- *
- * Records the report as generating, then ready or failed, in the session's AI collection (and in X.ai),
- * and delivers a sealed copy to the participant at each stage.
- *
- * @param {!Object} X A session bundle from loadSessionData(); X.ai is updated.
- * @param {!Object} part The participant entry from the session metadata.
- * @return {!Promise<void>}
- */
 async function runPersonal(X, part) {
   const path = `${P.sAi(X.sid)}/${part.uid}`;
   const snap = personalSnapshot(X, part); const cands = candidatesFor(snap); const hash = (await sha256hex(JSON.stringify(snap))).slice(0, 16);
@@ -3394,21 +1762,8 @@ async function runPersonal(X, part) {
   }
   rerenderSess();
 }
-/**
- * Re-renders the page only when the session dashboard is showing.
- */
 function rerenderSess() { if (S.view === "session") rerender(); }
 const AI_RUNNING = new Set();
-/**
- * Generates AI reports for a session's participants, two at a time, then the class report.
- *
- * A full run is skipped when one is already running for the session; the class report runs only on a full
- * run with the AI service available.
- *
- * @param {string} sid The session ID.
- * @param {!Array<string>=} only Participant IDs to limit the run to.
- * @return {!Promise<void>}
- */
 async function startAiForSession(sid, only) {
   if (AI_RUNNING.has(sid) && !only) return; AI_RUNNING.add(sid);
   try {
@@ -3418,56 +1773,18 @@ async function startAiForSession(sid, only) {
     if (!only && C.sample) await runClass(X).catch((e) => console.warn(e));
   } finally { AI_RUNNING.delete(sid); }
 }
-/**
- * Restarts reports that are missing or stuck generating for more than two minutes on the open ended
- * session, and starts the class report if it has none.
- *
- * @return {!Promise<void>}
- */
 async function resumePendingAi() {
   const X = S.sess; if (!X || !X.meta.endAt || !C.sample || AI_RUNNING.has(X.sid)) return;
   const missing = (X.meta.participants || []).filter((p) => !X.ai[p.uid] || (X.ai[p.uid].status === "generating" && now() - (X.ai[p.uid].startedAt || 0) > 120e3)).map((p) => p.uid);
   if (missing.length) { await startAiForSession(X.sid, missing); if (!X.ai._class) runClass(X).catch(() => {}); }
 }
-/**
- * Generates every participant report that is not ready, showing progress on the dashboard.
- *
- * @return {!Promise<void>}
- */
 ACT.aiMissing = async () => { const X = S.sess; const todo = (X.meta.participants || []).filter((p) => !X.ai[p.uid] || X.ai[p.uid].status !== "ready").map((p) => p.uid); if (!todo.length) return toast("Every report is ready."); X.aiBusy = `Generating ${todo.length} report${todo.length > 1 ? "s" : ""}…`; rerender(); await startAiForSession(X.sid, todo); X.aiBusy = ""; rerender(); };
-/**
- * Retries the AI report of the participant named by the clicked button.
- *
- * @param {!Element} el The clicked button; `data-uid` holds the participant ID.
- * @return {!Promise<void>}
- */
 ACT.aiRetry = async (el) => { await startAiForSession(S.sess.sid, [el.dataset.uid]); };
-/**
- * Downloads the clicked participant's AI report as a Markdown file.
- *
- * @param {!Element} el The clicked button; `data-uid` holds the participant ID.
- */
 ACT.aiDl = (el) => { const a = S.sess.ai[el.dataset.uid]; saveFile(safeName(`AlgoArena report - ${a.name} (${a.pid}).md`), a.md); };
-/**
- * Renders the dialog that shows an AI report with download and close buttons.
- *
- * @param {string} md The report Markdown.
- * @param {?Object} a The stored report record for the provenance line, or null to omit it.
- * @return {string} The dialog HTML.
- */
 function reportDialog(md, a) {
   return `<div class="dialog" style="max-width:760px"><div class="row"><span class="spacer"></span><button class="btn sm" data-act="dlOpen">Download .md</button><button class="btn sm ghost" data-act="close">Close</button></div><div class="md">${mdToHtml(md)}</div>
   ${a ? `<p class="small muted" style="margin-top:14px">Generated ${fmtDate(a.generatedAt)}${a.model ? " by " + esc(a.model) : ""}; prompt ${esc(a.promptVersion)}; evidence snapshot ${esc(a.metricsHash)}${a.words ? "; " + a.words + " words" : ""}${a.generatedBy === "participant" ? "; generated on the participant's device" : ""}.</p>` : ""}</div>`;
 }
-/**
- * Generates and stores the class-level AI report from aggregated session evidence.
- *
- * Records the report as generating, then ready (with Markdown built from evidence and the model reply) or
- * failed, in X.ai._class and the session's AI collection.
- *
- * @param {!Object} X A session bundle from loadSessionData(); X.ai._class is updated.
- * @return {!Promise<void>}
- */
 async function runClass(X) {
   const path = `${P.sAi(X.sid)}/_class`; const { perQ, people } = sessDerived(X);
   const evidence = { set_title: X.meta.setTitle, participants: people.length, questions: perQ.map((p) => { const q = p.q || {}; const wrong = p.dist.map((d, k) => [d, k]).filter(([, k]) => k !== p.correctOpt).sort((a, b) => b[0] - a[0])[0];
@@ -3496,22 +1813,8 @@ ${JSON.stringify(evidence)}`;
   } catch (e) { X.ai._class = { ...base, status: "failed", error: (e && (e.code || e.message)) || String(e) }; }
   await dset(path, X.ai._class).catch(() => {}); rerenderSess();
 }
-/**
- * Generates the class report for the open session.
- *
- * @return {!Promise<void>}
- */
 ACT.aiClass = async () => { await runClass(S.sess); };
-/**
- * Opens the class report of the open session in a dialog and remembers it for download.
- */
 ACT.aiClassView = () => { const a = S.sess.ai._class; S.openMd = { md: a.md, name: `AlgoArena class report - ${S.sess.meta.code}.md` }; openDialog(() => reportDialog(a.md, a)); };
-/**
- * Downloads a zip of every ready participant report, the class report if ready, and a README noting
- * what was missing.
- *
- * @return {!Promise<void>}
- */
 ACT.aiBatch = async () => {
   const X = S.sess; const files = [];
   for (const p of X.meta.participants || []) { const a = X.ai[p.uid]; if (a && a.status === "ready") files.push({ name: "reports/" + safeName(`${p.name || "player"} (${p.pid}).md`), data: a.md }); }
@@ -3520,24 +1823,9 @@ ACT.aiBatch = async () => {
   files.push({ name: "README.md", data: `# AlgoArena AI Learning Coach reports\n\nSession ${X.sid}, room ${X.meta.code}, ${new Date(X.meta.createdAt).toISOString()}.\n\nThese reports are AI-generated interpretations of recorded session evidence. They are not measurements of ability and are kept separate from the research records.\n\n${missing ? missing + " participant report(s) were not ready at export time.\n" : ""}${X.ai._class && X.ai._class.status === "ready" ? "" : "The class report was not ready at export time.\n"}` });
   await saveFile(`algoarena-reports-${X.meta.code}-${X.sid}.zip`, makeZip(files));
 };
-/**
- * Opens the clicked participant's AI report in a dialog and remembers it for download.
- *
- * @param {!Element} el The clicked button; `data-uid` holds the participant ID.
- */
 ACT.aiView = (el) => { const a = S.sess.ai[el.dataset.uid]; S.openMd = { md: a.md, name: `AlgoArena report - ${a.name} (${a.pid}).md` }; openDialog(() => reportDialog(a.md, a)); };
-/**
- * Downloads the report currently shown in the dialog as a Markdown file.
- */
 ACT.dlOpen = () => { if (S.openMd) saveFile(safeName(S.openMd.name), S.openMd.md); };
-/**
- * Imports reports that participants generated on their own devices into the open session.
- *
- * For each participant without a ready report, decrypts the sealed report in their public record (when it
- * belongs to this session) with the session's private key and stores it as a participant-generated report.
- *
- * @return {!Promise<void>}
- */
+/** Counterpart of ACT.mySelfGen: imports reports participants generated on their own device after host generation failed, sealed to the session key in pub/<uid>.rep. */
 async function importParticipantReports() {
   const X = S.sess; if (!X) return; const keys = await dget(`${P.keys()}/${X.sid}`); if (!keys) return;
   for (const p of X.meta.participants || []) {
@@ -3551,12 +1839,6 @@ async function importParticipantReports() {
 }
 
 /* ---------- participant side: personal report ---------- */
-/**
- * Subscribes to the participant's sealed report in the host's room and decrypts it on each change.
- *
- * Saves a ready report to the participant's joined-game record and re-renders the play view. Does nothing
- * without a game or when already subscribed.
- */
 function watchMyReport() {
   const p = S.play; if (!p || p.repUnsub) return;
   p.repUnsub = DB.doc(`${P.rep(p.hostId)}/${repId(p.sid, S.uid)}`).onSnapshot(async (s) => {
@@ -3567,12 +1849,6 @@ function watchMyReport() {
     if (S.view === "play") rerender();
   }, () => {}); p.unsubs.push(p.repUnsub);
 }
-/**
- * Renders the participant's learning-report panel on the game-over screen.
- *
- * @return {string} HTML for the report, a generating message, a failure notice (with a Generate button
- *     when possible), or a waiting message.
- */
 function reportPanel() {
   const p = S.play; const o = p.repOpen; const self = p.selfReport;
   const md = (self && self.md) || (o && o.md);
@@ -3581,17 +1857,7 @@ function reportPanel() {
   if (p.rep && p.rep.status === "failed") return `<h3>Your learning report</h3><p>Report generation didn't finish.</p>${C.sample && o && o.snapshot ? '<button class="btn primary" data-act="mySelfGen">Generate my report</button>' : '<p class="muted small">The host can retry from their dashboard.</p>'}`;
   return `<h3>Your learning report</h3><p>Your AI learning report is being prepared from this session's results. It will appear here and under "My live reports" on Home. <span class="waiting-dots"><span></span><span></span><span></span></span></p>`;
 }
-/**
- * Downloads the participant's own report (self-generated or received) as a Markdown file.
- */
 ACT.myDl = () => { const p = S.play; const md = (p.selfReport && p.selfReport.md) || (p.repOpen && p.repOpen.md); if (md) saveFile(safeName(`AlgoArena report - ${S.profile.displayName}.md`), md); };
-/**
- * Generates the participant's report on this device after the host's generation failed.
- *
- * Saves it to the joined-game record and publishes a copy sealed with the room's public key.
- *
- * @return {!Promise<void>}
- */
 ACT.mySelfGen = async () => {
   const p = S.play; const o = p.repOpen; if (!o || !o.snapshot) return; p.selfBusy = true; rerender();
   try {
@@ -3603,14 +1869,6 @@ ACT.mySelfGen = async () => {
   } catch (e) { toast("Couldn't generate the report: " + ((e && (e.message || e.code)) || e)); }
   p.selfBusy = false; rerender();
 };
-/**
- * Opens one of the participant's past live reports in a dialog.
- *
- * Uses the saved copy when present, otherwise decrypts the sealed report from the host's room.
- *
- * @param {!Element} el The clicked element; `data-host` and `data-sid` name the room host and session.
- * @return {!Promise<void>}
- */
 ACT.myReport = async (el) => {
   const host = el.dataset.host, sid = el.dataset.sid; const j = (S.joined || []).find((x) => x.sid === sid) || {};
   let md = j.report || null;

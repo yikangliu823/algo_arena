@@ -26,16 +26,6 @@ n = 0
 
 
 def rep(old, new, label):
-    """Replaces one exact, unique occurrence of a text anchor in the page.
-
-    Args:
-        old: Anchor text; it must occur exactly once in the current page text.
-        new: Replacement text.
-        label: Short patch name used in the error message.
-
-    Raises:
-        SystemExit: If the anchor occurs zero times or more than once.
-    """
     global s, n
     c = s.count(old)
     if c != 1:
@@ -44,17 +34,7 @@ def rep(old, new, label):
 
 
 def block(start, end, new, label):
-    """Replaces the span from a unique start marker through the first end marker after it.
-
-    Args:
-        start: Start marker; it must occur exactly once in the current page text.
-        end: End marker; the first occurrence after start ends the span (inclusive).
-        new: Replacement text for the whole span.
-        label: Short patch name used in the error message.
-
-    Raises:
-        SystemExit: If the start marker does not occur exactly once.
-    """
+    """Replaces from the unique `start` through the first `end` after it, inclusive; `end` need not be unique."""
     global s, n
     if s.count(start) != 1:
         sys.exit(f"[{label}] start occurs {s.count(start)} times")
@@ -62,7 +42,6 @@ def block(start, end, new, label):
     s = s[:i] + new + s[j:]; n += 1
 
 
-# ---------- identity of this build ----------
 rep('const APP = { version: "2.1.1-live",', 'const APP = { version: "3.0.0-b2",', "version")
 rep('const ARTIFACT_URL = "https://claude.ai/artifact/GwnVWEECxnYh9afck4RpGA";',
     'const ARTIFACT_URL = location.origin + location.pathname; // route B: the page\'s own address (GitHub Pages)', "url")
@@ -70,11 +49,10 @@ rep('<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/
     '<script type="module" src="./platform-firebase.js"></script>\n<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>', "platform_script")
 rep("<title>AlgoArena</title>", "<title>AlgoArena</title>", "title_present")
 
-# ---------- storage paths ----------
 rep("  room: (h) => `rooms/${h}`, rep: (h) => `rooms/${h}/r`, pub: (u) => `pub/${u}`,\n",
     "  room: (h) => `rooms/${h}`, rep: (h) => `rooms/${h}/r`, pub: (u) => `pub/${u}`, answers: (h) => `rooms/${h}/answers`,\n", "paths")
 
-# ---------- one clock: the database server ----------
+# One clock: every timing decision uses the database server's time.
 block("const hostNowEst = () => now() + (CLOCK.offset ?? 0);", "\n}\n",
       "/* Route B: every timing decision uses the database server's clock. Room times are server milliseconds\n"
       "   (shownSrv, openNowSrv); this device estimates server time from a measured offset. */\n"
@@ -87,7 +65,7 @@ block("const hostNowEst = () => now() + (CLOCK.offset ?? 0);", "\n}\n",
 rep('    const t = now(); const phase = t < openOf(r) ? "read" : "answer";', '    const t = hostNowEst(); const phase = t < openOf(r) ? "read" : "answer";', "host_tick_t")
 rep("    const remain = r.deadline - t; updateRing(remain, r.q.T);", "    const remain = deadlineOf(r) - t; updateRing(remain, r.q.T);", "host_tick_remain")
 
-# ---------- host writes: server-timestamp sentinels, then adopt the server's values ----------
+# Host writes server-timestamp sentinels, then adopts the server's values.
 block("async function hostWrite(patch) {", "\n}\n",
       "async function hostWrite(patch) {\n"
       "  const H = S.host; const full = { ...H.room, ...patch, v: (H.room.v || 0) + 1 };\n"
@@ -110,7 +88,7 @@ block("async function showQuestion(i) {", "\n};\n",
       "};\n",
       "show_question")
 
-# ---------- host reads answers from their own create-only documents ----------
+# The host reads answers from their own create-only documents.
 rep("  H.unsubs.push(DB.collection(\"pub\").where(\"sid\", \"==\", H.sid).onSnapshot((qs) => {",
     "  H.unsubs.push(DB.collection(P.answers(S.uid)).where(\"sid\", \"==\", H.sid).onSnapshot((qs) => {\n"
     "    const ans = {}; for (const d of qs.docs) { const a = d.data(); (ans[a.uid] = ans[a.uid] || {})[a.q] = a; } H.ans = ans;\n"
@@ -141,7 +119,7 @@ rep("const rts = []; for (const u of ans) { const a = H.players.get(u).answers[i
 rep("const p = H.players.get(u); const a = p && p.answers && p.answers[i]; const tk",
     "const p = H.players.get(u); const a = ansOf(u)[i]; const tk", "dash_row")
 
-# ---------- participant: answers are create-only documents with a server timestamp ----------
+# Participant answers are create-only documents with a server timestamp.
 rep("function myAnswer(i) { const p = S.play; return p && p.me && p.me.answers && p.me.answers[i]; }",
     "function myAnswer(i) { const p = S.play; return p && p.myAns && p.myAns[i]; }", "my_answer")
 rep("    if (t < openL) { updateRing(openL - t, r.q.R || 1, true); return; }\n",
@@ -180,7 +158,7 @@ rep("  await joinNamed(room.code, false); syncClock(5);\n",
 
 rep("async function unseal(privJwk, s) {\n", "async function unseal(privJwk, s) {\n  if (typeof s === \"string\") s = JSON.parse(s); // route B stores sealed answers as strings\n", "unseal_string")
 
-# ---------- sign-in with Google ----------
+# Sign-in with Google replaces claude.ai sign-in.
 rep('noclaude: "Open AlgoArena from its claude.ai link. Sign-in, storage, and live rooms are provided by claude.ai, so a saved copy of this page can\'t run.",',
     'noclaude: "AlgoArena couldn\'t reach its sign-in and storage service. Check your connection, then reload the page.",', "gate_noclaude")
 rep('signin: "Sign in to claude.ai to use AlgoArena. Every player and host needs to be signed in; your account is how answers, scores, and reports stay attached to you.",',
@@ -196,18 +174,18 @@ rep("  ${({ sets: homeSets, bank: homeBank, sessions: homeSessions, reports: hom
     "home_signout")
 rep("open the link, sign in to claude.ai, type the room code", "open the link, sign in with Google, type the room code", "lobby_text")
 
-# ---------- AI calls name their session (per-session quota, stage B2) ----------
+# AI calls name their session for the per-session quota (stage B2).
 rep('async function sampleJson(prompt) {', 'async function sampleJson(prompt, sid) {', "ai_0")
 rep('const r = await C.sample(prompt, { modelTier: "default", cache: false });', 'const r = await C.sample(prompt, { modelTier: "default", cache: false, sid });', "ai_1")
 rep('let r = await sampleJson(personalPrompt(snap, cands, false));', 'let r = await sampleJson(personalPrompt(snap, cands, false), snap.session_id);', "ai_2")
 rep('const r2 = await sampleJson(personalPrompt(snap, cands, true));', 'const r2 = await sampleJson(personalPrompt(snap, cands, true), snap.session_id);', "ai_3")
 rep('    const r = await sampleJson(prompt); const j = r.json;', '    const r = await sampleJson(prompt, X.sid); const j = r.json;', "ai_4")
 
-# ---------- no token-consuming automatic retries ----------
+# No automatic retries that consume tokens.
 rep('    catch (e) { last = e; if (e && (e.code === "rate_limited" || e.code === "upstream_error" || e.code === "empty_completion" || e instanceof SyntaxError)) { await sleep(2500 * (k + 1)); continue; } throw e; }', '    catch (e) { last = e; if (e && e.code === "rate_limited") { await sleep(2500 * (k + 1)); continue; } throw e; } // retry only when the AI service did not process the request (no tokens used)', 'noretry_0')
 rep('  if (rawWords > 300) { try { const r2 = await sampleJson(personalPrompt(snap, cands, true), snap.session_id); r = r2; res = pick(r2.json); md = composePersonal(snap, r2.json, res); } catch {} }', '  if (rawWords > 300) { // shorten locally instead of a second AI call\n    const j = clone(r.json); const lists = ["knowledge_points", "weak_or_risky_areas", "possible_confusions", "next_steps"];\n    for (let g = 0; g < 20 && words(composePersonal(snap, j, res)) > 300; g++) { const k = lists.filter((x) => Array.isArray(j[x]) && j[x].length > 1).sort((a, b) => j[b].length - j[a].length)[0]; if (k) j[k].pop(); else { j.performance_summary = String(j.performance_summary || "").split(/\\s+/).slice(0, 30).join(" "); break; } }\n    md = composePersonal(snap, j, res); r = { ...r, json: j }; }', 'noretry_1')
 
-# ---------- 400-word reports, prompt budget that fits, structured output kind ----------
+# 400-word reports: report_0 undoes noretry_1's local shortening; prompts are budgeted to fit.
 rep('  const rawWords = words(composePersonal(snap, { ...r.json }, res));\n  if (rawWords > 300) { // shorten locally instead of a second AI call\n    const j = clone(r.json); const lists = ["knowledge_points", "weak_or_risky_areas", "possible_confusions", "next_steps"];\n    for (let g = 0; g < 20 && words(composePersonal(snap, j, res)) > 300; g++) { const k = lists.filter((x) => Array.isArray(j[x]) && j[x].length > 1).sort((a, b) => j[b].length - j[a].length)[0]; if (k) j[k].pop(); else { j.performance_summary = String(j.performance_summary || "").split(/\\s+/).slice(0, 30).join(" "); break; } }\n    md = composePersonal(snap, j, res); r = { ...r, json: j }; }\n', '', 'report_0')
 rep('  while (words(md) > 300) {', '  while (words(md) > 400) {', 'report_1')
 rep('- Length: performance_summary at most ${strict ? 30 : 45} words; each list has 1 to 3 items of at most ${strict ? 14 : 22} words.', '- Length: performance_summary at most 50 words; each list has 1 to 3 items of at most 18 words, so the whole report fits in 400 words.', 'report_2')
@@ -216,7 +194,7 @@ rep('{ modelTier: "default", cache: false, sid }', '{ modelTier: "default", cach
 rep('sampleJson(personalPrompt(snap, cands, false), snap.session_id)', 'sampleJson(personalPrompt(snap, cands, false), snap.session_id, "personal")', 'report_5')
 rep('sampleJson(prompt, X.sid)', 'sampleJson(prompt, X.sid, "class")', 'report_6')
 
-# ---------- research export: the server clock is the reference ----------
+# Research export: the server clock is the reference.
 block("const TIMESTAMP_SEMANTICS = {", "\n};\n",
       "const TIMESTAMP_SEMANTICS = {\n"
       "  clock: \"All *_ms fields are Unix epoch milliseconds on the Firestore server clock unless a field says otherwise.\",\n"
@@ -238,7 +216,7 @@ rep("submitted_before_open = false.\\n`;",
     "submitted_before_open = false.\\n- schema_version 3 (AlgoArena 3, Firebase): timing fields use the Firestore server clock; elapsed_ms includes network delay from the device; client_elapsed_ms is the device's own unlock-to-tap measurement.\\n`;",
     "readme_note")
 
-# ---------- file header and JSDoc overlay (comments only; tools/index-comments/*.json) ----------
+# File header and JSDoc overlay (comments only).
 rep("<!doctype html>\n", "<!doctype html>\n<!--\n"
     "  AlgoArena route B: the Live Classroom 2.1.1 page on GitHub Pages with Firebase (built by tools/build-from-2.1.1.py).\n\n"
     "  Author: Yikang (Richard) Liu, M.S. Candidate in Computer Science, Khoury College of Computer Sciences,\n"

@@ -18,97 +18,61 @@
 const M = window.parent.__FB;
 const ME = new URLSearchParams(location.search).get("u");
 const LAT = 20;
-/**
- * Runs `fn` after the simulated network latency (LAT ms).
- * @param {function()} fn Callback.
- * @return {number} The timer id.
- */
 const later = (fn) => setTimeout(fn, LAT);
-/**
- * Returns a promise that resolves after the simulated network latency.
- * @return {!Promise<void>}
- */
 const delay = () => new Promise((r) => setTimeout(r, LAT));
 
-/**
- * Minimal Firestore Timestamp holding milliseconds.
- *
- * `constructor(ms)` stores the time, `toMillis()` returns it, and the static `fromMillis(ms)` builds one. The methods
- * share the class's single line, so they are documented here.
- */
 export class Timestamp { constructor(ms) { this._ms = ms; } toMillis() { return this._ms; } static fromMillis(ms) { return new Timestamp(ms); } }
-/** Field path for updateDoc; the constructor stores its segments in `segs`. */
 export class FieldPath { constructor(...segs) { this.segs = segs; } }
-/** Google auth provider stub; `setCustomParameters()` is a no-op. */
 export class GoogleAuthProvider { setCustomParameters() {} }
 const SENT = "__srv";
 /**
- * Returns the server-timestamp sentinel, which enc() replaces with the server time on write.
- * @return {!Object} The sentinel.
+ * enc() replaces this sentinel with the server time on write.
+ *
+ * @return {!Object}
  */
 export function serverTimestamp() { return { [SENT]: true }; }
-/**
- * Returns whether `v` is the server-timestamp sentinel.
- * @param {*} v Any value.
- * @return {*} True for the sentinel; a falsy value otherwise.
- */
 const isSent = (v) => v && typeof v === "object" && v[SENT] === true;
 
 /* ---------- app and auth ---------- */
 /**
- * Returns a fake app object.
- * @param {!Object} config Firebase config.
- * @return {{config: !Object}} The app.
+ * @param {!Object} config
+ * @return {{config: !Object}}
  */
 export function initializeApp(config) { return { config }; }
 const auth = { currentUser: null };
-/**
- * Returns the user of this frame (test uid ME) when signed in in the shared state, else null.
- * @return {?{uid: string, displayName: string, email: string}} The user.
- */
 function userObj() { return M.signedIn[ME] ? { uid: ME, displayName: M.names[ME] || ME, email: ME + "@example.edu" } : null; }
 /**
- * Refreshes and returns the module's single auth object.
- * @return {{currentUser: ?Object}} The auth object.
+ * Re-reads this frame's sign-in state from the shared store on every call.
+ *
+ * @return {{currentUser: ?Object}}
  */
 export function getAuth() { auth.currentUser = userObj(); return auth; }
 /**
- * Calls `cb` once, after the simulated latency, with the current user.
- * @param {!Object} a Auth object (unused).
- * @param {function(?Object)} cb Listener.
- * @return {function()} A no-op unsubscribe function.
+ * Fires once, after the simulated latency; later sign-in changes are not reported.
+ *
+ * @param {!Object} a
+ * @param {function(?Object)} cb
+ * @return {function()} A no-op unsubscribe.
  */
 export function onAuthStateChanged(a, cb) { later(() => cb(userObj())); return () => {}; }
-/**
- * Resolves to null: there is never a pending redirect result.
- * @return {!Promise<null>}
- */
+/** @return {!Promise<null>} */
 export async function getRedirectResult() { return null; }
 /**
- * Signs this frame's user in, after the simulated latency, in the shared state and on `a`.
- * @param {{currentUser: ?Object}} a Auth object.
- * @return {!Promise<{user: !Object}>} The sign-in result.
+ * Signs in this frame's test user (the ?u= uid) without any popup.
+ *
+ * @param {{currentUser: ?Object}} a
+ * @return {!Promise<{user: !Object}>}
  */
 export async function signInWithPopup(a) { await delay(); M.signedIn[ME] = true; a.currentUser = userObj(); return { user: a.currentUser }; }
-/** Alias of signInWithPopup: the mock signs in at once instead of redirecting. */
+/** The mock signs in at once instead of redirecting. */
 export const signInWithRedirect = signInWithPopup;
 /**
- * Signs this frame's user out in the shared state and clears `a.currentUser`.
- * @param {{currentUser: ?Object}} a Auth object.
+ * @param {{currentUser: ?Object}} a
  * @return {!Promise<void>}
  */
 export async function signOut(a) { M.signedIn[ME] = false; a.currentUser = null; }
 
 /* ---------- encoding: stored data is JSON with {__ts: ms} for timestamps ---------- */
-/**
- * Encodes a value for storage.
- *
- * The sentinel becomes `{__ts: now}`, Timestamp-like values become `{__ts: ms}`, arrays and objects are encoded
- * recursively, and undefined object fields are dropped.
- * @param {*} v Value to encode.
- * @param {number} now Server time in ms used for sentinels.
- * @return {*} The encoded value.
- */
 function enc(v, now) {
   if (isSent(v)) return { __ts: now };
   if (v instanceof Timestamp || (v && typeof v.toMillis === "function")) return { __ts: v.toMillis() };
@@ -116,74 +80,24 @@ function enc(v, now) {
   if (v && typeof v === "object") { const o = {}; for (const [k, x] of Object.entries(v)) if (x !== undefined) o[k] = enc(x, now); return o; }
   return v;
 }
-/**
- * Decodes stored data: an object whose only key is `__ts` becomes a Timestamp; arrays and objects recurse.
- * @param {*} v Stored value.
- * @return {*} The decoded value.
- */
 function dec(v) {
   if (v && typeof v === "object" && !Array.isArray(v) && Object.keys(v).length === 1 && "__ts" in v) return new Timestamp(v.__ts);
   if (Array.isArray(v)) return v.map(dec);
   if (v && typeof v === "object") { const o = {}; for (const [k, x] of Object.entries(v)) o[k] = dec(x); return o; }
   return v;
 }
-/**
- * Returns `v.__ts` for an encoded timestamp, else `v` unchanged.
- * @param {*} v Stored value.
- * @return {*} Milliseconds or the original value.
- */
 const ms = (v) => (v && typeof v === "object" && "__ts" in v ? v.__ts : v);
-/**
- * Splits a path into its non-empty segments.
- * @param {string} p Path.
- * @return {!Array<string>} The segments.
- */
 const segs = (p) => p.split("/").filter(Boolean);
-/**
- * Returns the path of the collection that contains a document.
- * @param {string} p Document path.
- * @return {string} The parent collection path.
- */
 const parentOf = (p) => segs(p).slice(0, -1).join("/");
-/**
- * Returns a permission-denied error shaped like the SDK's.
- * @return {!Error} The error, with code "permission-denied".
- */
 const denied = () => Object.assign(new Error("Missing or insufficient permissions."), { code: "permission-denied" });
 
 /* ---------- rules mirror ---------- */
-/**
- * Returns whether `uid` is listed in meta/admins.
- * @param {string} uid User id.
- * @return {boolean} True for an admin.
- */
 function isAdmin(uid) { const a = M.docs.get("meta/admins"); return !!(a && (a.uids || []).includes(uid)); }
-/**
- * Returns whether `now` lies in the answer window [open, open + T s + 250 ms].
- *
- * `open` is openNowSrv when set, else shownSrv plus readS seconds (mirror of the rules).
- * @param {!Object} r Stored room document.
- * @param {number} now Server time in ms.
- * @return {boolean} True inside the window.
- */
 function inWindow(r, now) {
   const T = Number(r.q && r.q.T) * 1000;
   const open = r.openNowSrv != null ? ms(r.openNowSrv) : ms(r.shownSrv) + Number(r.readS) * 1000;
   return now >= open && now <= open + T + 250;
 }
-/**
- * Mirrors the rules' check for creating an answer.
- *
- * The room must be in "question"; the keys must be allowed and include uid, sid, q, ct and srv; uid must be the writer;
- * sid and q must match the room's session and question; ct must be a string shorter than 4096; the id must be
- * `<uid>_<sid>_<q>`; srv must be the sentinel; and the time must be inside the window. Reasons for a refusal are
- * appended to M.refusedWhy for debugging.
- * @param {string} host Host uid (the room id).
- * @param {string} aid Answer document id.
- * @param {!Object} raw Unencoded data being written.
- * @param {number} now Server time in ms.
- * @return {boolean} True when the write is allowed.
- */
 function validAnswer(host, aid, raw, now) {
   const r = M.docs.get(`rooms/${host}`); if (!r || r.status !== "question") return false;
   const keys = Object.keys(raw); const allowed = ["uid", "sid", "q", "ct", "srv", "mono", "localAt", "offset", "rtt", "dev"];
@@ -193,14 +107,6 @@ function validAnswer(host, aid, raw, now) {
   if (why.length) M.refusedWhy = [...(M.refusedWhy || []), { who: ME, why, ctLen: raw.ct && raw.ct.length }];
   return !why.length;
 }
-/**
- * Mirrors the rules' read checks for this frame's user (ME).
- *
- * Allowed: own user data; the bank and meta; any room; a report delivery for its host or recipient; an answer for
- * the host or its author; a public record for its owner or the host it names. Signed-out users read nothing.
- * @param {string} path Document path.
- * @return {boolean} True when the read is allowed.
- */
 function canRead(path) {
   const s = segs(path); if (!M.signedIn[ME]) return false;
   if (s[0] === "data" && s[1] === "users") return s[2] === ME;
@@ -211,13 +117,6 @@ function canRead(path) {
   if (s[0] === "pub") { const d = M.docs.get(path); return s[1] === ME || !!(d && d.host === ME); }
   return false;
 }
-/**
- * Mirrors the rules' list checks: pub queries must filter on `host == ME`, a room's answers are listable by its host
- * only, the rooms collection is listable, and other collections fall back to canRead on a child path.
- * @param {string} colPath Collection path.
- * @param {!Array<!Object>} cons Query constraints.
- * @return {boolean} True when the query is allowed.
- */
 function canList(colPath, cons) {
   const s = segs(colPath); if (!M.signedIn[ME]) return false;
   if (s[0] === "pub" && s.length === 1) return cons.some((c) => c.k === "where" && c.f === "host" && c.op === "==" && c.v === ME);
@@ -225,15 +124,6 @@ function canList(colPath, cons) {
   if (s[0] === "rooms" && s.length === 1) return true;
   return canRead(colPath + "/x");
 }
-/**
- * Mirrors the rules' write checks: own user data; the bank and meta for admins; a room and its report deliveries for
- * the host; answers only as new documents that pass validAnswer; public records for their owner.
- * @param {string} path Document path.
- * @param {?Object} raw Data being written, or null for update and delete.
- * @param {boolean} exists Whether the document already exists.
- * @param {number} now Server time in ms.
- * @return {boolean} True when the write is allowed.
- */
 function canWrite(path, raw, exists, now) {
   const s = segs(path); if (!M.signedIn[ME]) return false;
   if (s[0] === "data" && s[1] === "users") return s[2] === ME;
@@ -246,90 +136,58 @@ function canWrite(path, raw, exists, now) {
 }
 
 /* ---------- subscriptions ---------- */
-/**
- * Schedules a delivery, after the simulated latency, to each subscription on the document or its parent
- * collection that is still active at that time.
- * @param {string} path Changed document path.
- */
 function notify(path) {
   for (const sub of M.subs) if (sub.path === path || sub.col === parentOf(path)) later(() => { if (M.subs.has(sub)) sub.deliver(); });
 }
 
 /* ---------- firestore ---------- */
-/**
- * Returns the fake Firestore handle.
- * @return {{kind: string}} The handle.
- */
+/** @return {{kind: string}} */
 export function initializeFirestore() { return { kind: "firestore" }; }
-/**
- * Returns the fake Firestore handle.
- * @return {{kind: string}} The handle.
- */
+/** @return {{kind: string}} */
 export function getFirestore() { return { kind: "firestore" }; }
 /**
- * Returns a document reference.
+ * With a collection reference, returns a random-id child whose `id` is the placeholder "x".
  *
- * Given a collection reference, it picks a random id under that collection (the reference's `id` is then the
- * placeholder "x"); otherwise `path` is the full document path.
  * @param {!Object} db Firestore handle or collection reference.
- * @param {string=} path Document path.
- * @return {{kind: string, path: string, id: string}} The reference.
+ * @param {string=} path
+ * @return {{kind: string, path: string, id: string}}
  */
 export function doc(db, path) { if (db && db.kind === "col") return { kind: "doc", path: db.path + "/" + Math.random().toString(36).slice(2, 12), id: "x" }; return { kind: "doc", path, id: segs(path).at(-1) }; }
 /**
- * Returns a collection reference.
- * @param {!Object} db Firestore handle (unused).
- * @param {string} path Collection path.
- * @return {{kind: string, path: string}} The reference.
+ * @param {!Object} db
+ * @param {string} path
+ * @return {{kind: string, path: string}}
  */
 export function collection(db, path) { return { kind: "col", path }; }
 /**
- * Returns a where constraint.
- * @param {string} f Field name.
- * @param {string} op Operator.
- * @param {*} v Value.
- * @return {{k: string, f: string, op: string, v: *}} The constraint.
+ * @param {string} f
+ * @param {string} op
+ * @param {*} v
+ * @return {{k: string, f: string, op: string, v: *}}
  */
 export function where(f, op, v) { return { k: "where", f, op, v }; }
 /**
- * Returns an order constraint.
- * @param {string} f Field name.
- * @param {string=} dir "asc" (default) or "desc".
- * @return {{k: string, f: string, dir: string}} The constraint.
+ * @param {string} f
+ * @param {string=} dir "asc" or "desc".
+ * @return {{k: string, f: string, dir: string}}
  */
 export function orderBy(f, dir = "asc") { return { k: "order", f, dir }; }
 /**
- * Returns a limit constraint.
- * @param {number} n Maximum number of results.
- * @return {{k: string, n: number}} The constraint.
+ * @param {number} n
+ * @return {{k: string, n: number}}
  */
 export function limit(n) { return { k: "limit", n }; }
 /**
- * Returns a query over a collection with the given constraints.
- * @param {{path: string}} col Collection reference.
- * @param {...!Object} cons Constraints.
- * @return {{kind: string, path: string, cons: !Array<!Object>}} The query.
+ * @param {{path: string}} col
+ * @param {...!Object} cons
+ * @return {{kind: string, path: string, cons: !Array<!Object>}}
  */
 export function query(col, ...cons) { return { kind: "query", path: col.path, cons }; }
 
-/**
- * Returns a snapshot of the stored document; `data()` gives a decoded deep copy, or undefined when absent.
- * @param {string} path Document path.
- * @return {!Object} The snapshot.
- */
 function docSnapshot(path) {
   const d = M.docs.get(path);
   return { id: segs(path).at(-1), exists: () => d !== undefined, data: () => (d === undefined ? undefined : dec(JSON.parse(JSON.stringify(d)))), metadata: { hasPendingWrites: false } };
 }
-/**
- * Runs a query over the direct children of a collection.
- *
- * Rows are sorted by path, filtered by every where constraint (timestamps compared as ms), then sorted by the first
- * order constraint and cut by the first limit.
- * @param {string} path Collection path.
- * @param {!Array<!Object>} cons Constraints.
- * @return {{docs: !Array<!Object>, size: number, empty: boolean}} The query snapshot.
- */
 function runQuery(path, cons) {
   let rows = [...M.docs.entries()].filter(([k]) => parentOf(k) === path).sort((a, b) => (a[0] < b[0] ? -1 : 1));
   for (const c of cons.filter((x) => x.k === "where")) rows = rows.filter(([, d]) => { const a = ms(d[c.f]);
@@ -340,28 +198,26 @@ function runQuery(path, cons) {
   return { docs, size: docs.length, empty: !docs.length };
 }
 /**
- * Reads one document after the simulated latency.
- * @param {{path: string}} ref Document reference.
- * @return {!Promise<!Object>} The snapshot.
- * @throws {!Error} permission-denied when canRead refuses.
+ * @param {{path: string}} ref
+ * @return {!Promise<!Object>}
+ * @throws {!Error} permission-denied when the rules mirror refuses the read.
  */
 export async function getDoc(ref) { await delay(); if (!canRead(ref.path)) throw denied(); return docSnapshot(ref.path); }
-/** Alias of getDoc: the mock has no cache. */
+/** The mock has no cache. */
 export const getDocFromServer = getDoc;
 /**
- * Runs a query after the simulated latency.
  * @param {{path: string, cons: (!Array<!Object>|undefined)}} q Query or collection reference.
- * @return {!Promise<!Object>} The query snapshot.
- * @throws {!Error} permission-denied when canList refuses.
+ * @return {!Promise<!Object>}
+ * @throws {!Error} permission-denied when the rules mirror refuses the query.
  */
 export async function getDocs(q) { await delay(); const cons = q.cons || []; if (!canList(q.path, cons)) throw denied(); return runQuery(q.path, cons); }
 /**
- * Writes a document after the simulated latency, encoding timestamps with the server time, and notifies
- * subscribers. Refused writes are recorded in M.refused.
- * @param {{path: string}} ref Document reference.
- * @param {!Object} data Document data.
+ * Refused writes are recorded in M.refused.
+ *
+ * @param {{path: string}} ref
+ * @param {!Object} data
  * @return {!Promise<void>}
- * @throws {!Error} permission-denied when canWrite refuses.
+ * @throws {!Error} permission-denied when the rules mirror refuses the write.
  */
 export async function setDoc(ref, data) {
   await delay(); const now = M.now(); const exists = M.docs.has(ref.path);
@@ -369,14 +225,12 @@ export async function setDoc(ref, data) {
   M.docs.set(ref.path, enc(data, now)); notify(ref.path);
 }
 /**
- * Updates fields of an existing document and notifies subscribers.
+ * Missing or non-object intermediate maps are created.
  *
- * Arguments after `ref` alternate between field paths (dotted strings or FieldPath) and values; missing or non-object
- * intermediate maps are created.
- * @param {{path: string}} ref Document reference.
- * @param {...*} args Alternating field paths and values.
+ * @param {{path: string}} ref
+ * @param {...*} args Alternating field paths (dotted string or FieldPath) and values.
  * @return {!Promise<void>}
- * @throws {!Error} not-found when the document does not exist; permission-denied when canWrite refuses.
+ * @throws {!Error} not-found when the document does not exist; permission-denied when refused.
  */
 export async function updateDoc(ref, ...args) {
   await delay(); const now = M.now(); const cur = M.docs.get(ref.path);
@@ -391,23 +245,20 @@ export async function updateDoc(ref, ...args) {
   M.docs.set(ref.path, next); notify(ref.path);
 }
 /**
- * Deletes a document after the simulated latency and notifies subscribers.
- * @param {{path: string}} ref Document reference.
+ * @param {{path: string}} ref
  * @return {!Promise<void>}
- * @throws {!Error} permission-denied when canWrite refuses.
+ * @throws {!Error} permission-denied when the rules mirror refuses the delete.
  */
 export async function deleteDoc(ref) { await delay(); if (!canWrite(ref.path, null, true, M.now())) throw denied(); M.docs.delete(ref.path); notify(ref.path); }
 /**
- * Subscribes to a document or a query.
+ * Options are ignored. Read rules are rechecked on every delivery; a refusal drops the subscription and reports
+ * permission-denied.
  *
- * Accepts (target, next, error) or (target, options, next, error); options are ignored. The first delivery happens
- * after the simulated latency and later ones on notify(). If the read check fails at delivery time, the subscription
- * is dropped and `error` receives permission-denied.
  * @param {!Object} target Document reference or query.
- * @param {(!Object|function(!Object))} a Options or the next callback.
+ * @param {(!Object|function(!Object))} a Options, or the next callback.
  * @param {function(*)=} b Next or error callback.
- * @param {function(!Error)=} c Error callback.
- * @return {function()} Unsubscribe function.
+ * @param {function(!Error)=} c
+ * @return {function()} Unsubscribe.
  */
 export function onSnapshot(target, a, b, c) {
   const opts = typeof a === "function" ? {} : a; const next = typeof a === "function" ? a : b; const error = typeof a === "function" ? b : c;
@@ -422,23 +273,20 @@ export function onSnapshot(target, a, b, c) {
   return () => M.subs.delete(sub);
 }
 
-/* ---------- functions: the harness page runs coach-core.js with fake Anthropic and Firestore-backed deps ---------- */
+/* ---------- functions: the harness page runs the real coach-core.js with fake deps ---------- */
 /**
- * Returns a fake functions handle.
- * @param {!Object} app App (unused).
- * @param {string} region Region name.
- * @return {{region: string}} The handle.
+ * @param {!Object} app
+ * @param {string} region
+ * @return {{region: string}}
  */
 export function getFunctions(app, region) { return { region }; }
 /**
- * Returns a callable that sends a JSON deep copy of its data to M.callFunction as this frame's user (null when
- * signed out) and resolves to `{data}`.
+ * Calls M.callFunction in the harness page as this frame's user (null when signed out). Errors carry an SDK-style
+ * `functions/<code>` code, with the coach code kept in `details.code`.
  *
- * Errors are rethrown with an SDK-style code `functions/<code>` mapped from the coach error code (unknown codes map to
- * internal), and the coach code is kept in `details.code`.
- * @param {!Object} fns Functions handle (unused).
- * @param {string} name Function name.
- * @return {function(*): !Promise<{data: *}>} The callable.
+ * @param {!Object} fns
+ * @param {string} name
+ * @return {function(*): !Promise<{data: *}>}
  */
 export function httpsCallable(fns, name) {
   return async (data) => {

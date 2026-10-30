@@ -23,24 +23,11 @@ results = []
 
 
 def check(name, cond, detail=""):
-    """Records a named check result and prints a PASS or FAIL line.
-
-    Args:
-        name: Description of the check.
-        cond: Value whose truthiness is the result.
-        detail: Optional diagnostic text printed in brackets.
-    """
     results.append((name, bool(cond))); print(("PASS " if cond else "FAIL ") + name + (f"  [{detail}]" if detail else ""))
 
 
 class Quiet(http.server.SimpleHTTPRequestHandler):
-    """Static file handler for test/e2e that suppresses per-request logging."""
     def log_message(self, *a):
-        """Discards the request log line.
-
-        Args:
-            *a: Format string and arguments from the base handler (ignored).
-        """
         pass
 
 
@@ -67,19 +54,6 @@ with sync_playwright() as pw:
     sleep = lambda s: page.wait_for_timeout(int(s * 1000))
 
     def frame_for(uid):
-        """Returns the iframe whose URL carries the given test user.
-
-        Polls page.frames up to 100 times, 50 ms apart.
-
-        Args:
-            uid: Test user id, passed to app.html as the u query parameter.
-
-        Returns:
-            The matching Playwright Frame.
-
-        Raises:
-            AssertionError: If no such frame appears.
-        """
         for _ in range(100):
             for f in page.frames:
                 if f"u={uid}&" in f.url:
@@ -91,18 +65,6 @@ with sync_playwright() as pw:
     ms = lambda v: v["__ts"] if isinstance(v, dict) and "__ts" in v else v
 
     def wait_status(st, timeout=12):
-        """Waits until the room document rooms/H has the given status.
-
-        Args:
-            st: Expected value of the status field.
-            timeout: Approximate limit in seconds; polled every 50 ms.
-
-        Returns:
-            The room document (a dict) once it has that status.
-
-        Raises:
-            AssertionError: If the status is not reached in time.
-        """
         for _ in range(int(timeout * 20)):
             r = get("rooms/H")
             if r and r.get("status") == st:
@@ -111,17 +73,6 @@ with sync_playwright() as pw:
         raise AssertionError(f"room never reached {st}")
 
     def wait_answers(sid, n, q, timeout=8):
-        """Waits until at least n answers to question q of session sid are stored.
-
-        Args:
-            sid: Session id.
-            n: Minimum number of answer documents.
-            q: Question index.
-            timeout: Approximate limit in seconds; polled every 50 ms.
-
-        Raises:
-            AssertionError: If fewer answers are stored when the time is up.
-        """
         for _ in range(int(timeout * 20)):
             got = page.evaluate("([sid, q]) => [...__FB.docs.keys()].filter((k) => k.startsWith('rooms/H/answers/') && k.endsWith('_' + sid + '_' + q)).length", [sid, q])
             if got >= n:
@@ -130,23 +81,11 @@ with sync_playwright() as pw:
         raise AssertionError("answers not stored")
 
     def direct_answer(F, q, srv_server=True):
-        """Writes an answer document directly from a player's frame, bypassing the UI.
-
-        Used to check that the database refuses forged writes. The answer's ct is "forged".
-
-        Args:
-            F: The player's Playwright Frame.
-            q: Question index to answer.
-            srv_server: If True, srv is DB.serverTime(); otherwise the device's Date.now().
-
-        Returns:
-            "accepted" if the write succeeded, else the error code (for example "permission_denied").
-        """
         return F.evaluate("""async ([q, srvServer]) => { const p = S.play; try {
             await DB.doc(`rooms/${p.hostId}/answers/${S.uid}_${p.sid}_${q}`).set({ uid: S.uid, sid: p.sid, q, ct: "forged", srv: srvServer ? DB.serverTime() : Date.now() });
             return "accepted"; } catch (e) { return e.code; } }""", [q, srv_server])
 
-    # ---------- Google sign-in ----------
+    # Google sign-in
     for F in (H, A, B):
         F.wait_for_selector('[data-act="signIn"]', timeout=8000)
     check("signed-out users see 'Sign in with Google'", "Google" in H.inner_text('[data-act="signIn"]'))
@@ -159,7 +98,7 @@ with sync_playwright() as pw:
     offB = B.evaluate("() => DB.serverOffset()")
     check("B's server-clock offset estimate corrects its -5 s skew", 4500 <= offB <= 5500, str(offB))
 
-    # ---------- room ----------
+    # room
     H.click('[data-act="launch"][data-id="set1"]'); H.wait_for_selector("#l_r"); H.fill("#l_t", "15"); H.fill("#l_r", "3")
     H.click('[data-act="createRoom"]'); H.wait_for_selector(".bigcode", timeout=8000)
     code = H.inner_text(".bigcode").strip()
@@ -169,7 +108,7 @@ with sync_playwright() as pw:
     check("host sees both players (pub query filtered by host)", True)
     H.click('[data-act="hStart"]')
 
-    # ---------- Q1 ----------
+    # Q1
     r = wait_status("question"); sid = r["sid"]
     check("room has a server timestamp for the question", isinstance(r.get("shownSrv"), dict) and "__ts" in r["shownSrv"] and r["readS"] == 3)
     A.wait_for_selector(".answers.locked", timeout=3000); B.wait_for_selector(".answers.locked", timeout=3000)
@@ -194,7 +133,7 @@ with sync_playwright() as pw:
     A.wait_for_selector(".feedback-big", timeout=4000)
     check("A sees Correct", "Correct" in A.inner_text(".feedback-big"))
 
-    # ---------- Q2: open early, one answer only ----------
+    # Q2: open early, one answer only
     H.click('[data-act="hNext"]'); r2 = wait_status("question")
     B.wait_for_selector(".answers.locked", timeout=3000); sleep(0.8)
     H.click('[data-act="hOpenNow"]'); B.wait_for_selector('[data-act="answer"]', timeout=3000)
@@ -208,7 +147,7 @@ with sync_playwright() as pw:
     check("B scored from the early open (~1 s)", s2["B"]["correct"] and 600 <= s2["B"]["elapsed_ms"] <= 2200, str(s2["B"]["elapsed_ms"]))
     check("database refuses answers while the room is not taking them", direct_answer(A, 1) == "permission_denied")
 
-    # ---------- Q3 and end ----------
+    # Q3 and end
     H.click('[data-act="hNext"]'); wait_status("question")
     A.wait_for_selector('[data-act="answer"]', timeout=6000); B.wait_for_selector('[data-act="answer"]', timeout=6000)
     A.click(f'[data-act="answer"][data-i="{C[2]}"]'); B.click(f'[data-act="answer"][data-i="{C[2]}"]')
@@ -220,7 +159,7 @@ with sync_playwright() as pw:
     check("A's review lists 3 questions", A.locator(".review details").count() == 3)
     check("other players' answers are unreadable to A", A.evaluate("(sid) => DB.doc(`rooms/H/answers/B_${sid}_0`).get().then(() => 'read', (e) => e.code)", sid) == "permission_denied")
 
-    # ---------- AI learning reports through the coach function ----------
+    # AI learning reports through the coach function
     aidoc = lambda u: get(f"data/users/H/profile/sessions/{sid}/ai/{u}") or {}
     for _ in range(600):
         if all(aidoc(u).get("status") == "ready" for u in ("A", "B", "_class")):
@@ -266,13 +205,13 @@ with sync_playwright() as pw:
     check("an unparseable AI reply is not retried (one call, then the report fails)", probe["bad"] == "SyntaxError" and probe["badCalls"] == 1, str(probe))
     check("a long report is shortened locally to 400 words or fewer without a second call", probe["longCalls"] == 1 and probe["words"] <= 400, str(probe))
 
-    # ---------- export ----------
+    # export
     H.click('[data-act="openSession"]'); H.wait_for_selector("text=Research export", timeout=6000); sleep(1.0)
     ex = H.evaluate("() => buildExport([S.sess.sid], false)")
     check("export: reading time, server timing, client elapsed", ex["sessions"][0]["reading_time_s"] == 3 and all(x["timing_source"] == "server" and "client_elapsed_ms" in x for x in ex["submissions"]))
     check("export has 6 submissions and 6 exposures", len(ex["submissions"]) == 6 and len(ex["exposures"]) == 6)
 
-    # ---------- sign out ----------
+    # sign out
     A.click('[data-act="home"]'); A.wait_for_selector('[data-act="signOut"]', timeout=5000); A.click('[data-act="signOut"]')
     A.wait_for_selector('[data-act="signIn"]', timeout=8000)
     check("sign out returns to the sign-in screen", True)

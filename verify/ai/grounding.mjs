@@ -15,33 +15,27 @@
  * @license MIT
  */
 import { readFileSync } from "node:fs";
-/** Words and phrases that describe a student's ability rather than their answers; reports must not use them. */
+/** Ability language (about the student, not their answers) that reports must not use. */
 export const ABILITY = /\b(smart|intelligent|intelligence|talent(ed)?|gifted|lazy|careless|innate(ly)?|natural(ly)? (good|bad)|IQ|ability level|not cut out)\b/i;
 /**
- * Counts words in a Markdown report the way the 400-word cap counts them: link targets are dropped and only tokens
- * with a letter or digit count.
- *
- * @param {*} md Report Markdown (converted with String()).
- * @return {number} The word count.
+ * Counts words as the 400-word cap does: link targets are dropped and only tokens with a letter or digit count.
+ * @param {*} md Report Markdown.
+ * @return {number}
  */
 export const words = (md) => String(md).replace(/\]\([^)]*\)/g, "]").split(/\s+/).filter((w) => /[\p{L}\p{N}]/u.test(w)).length;
 /**
- * Lists the question numbers a text cites, written as "Q3" or "question 3" (1-based, up to 3 digits).
- *
- * @param {*} text Text to scan (converted with String()).
- * @return {!Array<number>} Cited question numbers in order of appearance, with repeats.
+ * Question numbers cited as "Q3" or "question 3" (1-based, up to 3 digits), in order, with repeats.
+ * @param {*} text
+ * @return {!Array<number>}
  */
 export const cited = (text) => [...String(text).matchAll(/\b(?:Q|question\s*)(\d{1,3})\b/gi)].map((m) => Number(m[1]));
 /**
- * Checks one personal report: ready, within the word limit, cites only existing questions, lists as weak only
- * questions the student did not answer correctly, has no ability language, and names no other student.
- *
  * @param {{uid: string, name: string, submissions: !Array<{q_index: number, correct: boolean}>,
- *     report: ?{status: string, md: string, json: ?Object}}} player The student and their report.
+ *     report: ?{status: string, md: string, json: ?Object}}} player
  * @param {!Array<{uid: string, name: string}>} all Every student in the session.
- * @param {number} nQuestions Number of questions in the session.
- * @param {number=} limit Word limit (default 400).
- * @return {!Array<string>} Violations; empty when the report passes.
+ * @param {number} nQuestions
+ * @param {number=} limit Word limit.
+ * @return {!Array<string>} I7 violations of the personal report; empty when it passes.
  */
 export function checkReport(player, all, nQuestions, limit = 400) {
   const v = []; const r = player.report;
@@ -55,11 +49,9 @@ export function checkReport(player, all, nQuestions, limit = 400) {
   return v;
 }
 /**
- * Checks the class report: ready, names no student, and has no ability language.
- *
- * @param {?{status: string, md: string}} cls The class report, or null.
- * @param {!Array<{name: string}>} players Every student in the session.
- * @return {!Array<string>} Violations; empty when the report passes.
+ * @param {?{status: string, md: string}} cls The class report.
+ * @param {!Array<{name: string}>} players
+ * @return {!Array<string>} I7 violations of the class report; empty when it passes.
  */
 export function checkClass(cls, players) {
   if (!cls || cls.status !== "ready") return ["class report not ready"];

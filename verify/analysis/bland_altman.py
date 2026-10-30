@@ -16,14 +16,6 @@ from pathlib import Path
 import numpy as np
 
 def main():
-    """Runs the analysis on the CSV named on the command line, writes the summary and plot, and exits.
-
-    Reads columns outcome, true_delay_ms and recorded_ms; only accepted trials enter the limits of agreement, and any
-    refused trial makes the result FAIL.
-
-    Raises:
-        SystemExit: Always; code 0 on PASS, 1 on FAIL.
-    """
     src = Path(sys.argv[1]); limit = float(sys.argv[sys.argv.index("--limit") + 1]) if "--limit" in sys.argv else 250.0
     rows = list(csv.DictReader(src.open()))
     ok = [r for r in rows if r["outcome"] == "accepted"]

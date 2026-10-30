@@ -40,35 +40,11 @@ if (CONFIG.firebase.projectId !== PROJECT) { console.error(`firebase-config.js p
 adminInit({ credential: applicationDefault(), projectId: PROJECT });
 const adb = adminFirestore();
 const HOST = "verify-host";
-/**
- * @param {number} ms Delay in milliseconds (negative values count as 0).
- * @return {!Promise<void>} Resolves after the delay.
- */
 const sleep = (ms) => new Promise((r) => setTimeout(r, Math.max(0, ms)));
-/**
- * Returns a percentile by the nearest-rank method on a sorted copy.
- *
- * @param {!Array<number>} xs Samples.
- * @param {number} p Fraction in [0, 1]; 1 gives the maximum.
- * @return {?number} The percentile, or null when there are no samples.
- */
+// Nearest-rank percentile; p = 1 gives the maximum.
 const pct = (xs, p) => { const s = [...xs].sort((a, b) => a - b); return s.length ? s[Math.min(s.length - 1, Math.floor(p * s.length))] : null; };
-/**
- * Writes a result file, creating its directory, and logs the path.
- *
- * @param {string} file Output path.
- * @param {string} text File contents.
- */
 const out = (file, text) => { mkdirSync(dirname(file), { recursive: true }); writeFileSync(file, text); console.log("wrote", file); };
 
-/**
- * Signs in one simulated player with a custom token (so the real rules apply) and estimates its server clock offset
- * the same way the page does.
- *
- * @param {string} uid Player uid to mint a token for.
- * @return {!Promise<{uid: string, db: !Object, offset: number, rtt: number}>} The player's Firestore instance,
- *     server-minus-local offset estimate (ms) and the round-trip time of the best probe (ms).
- */
 async function client(uid) {
   const app = initializeApp(CONFIG.firebase, uid);
   await signInWithCustomToken(getAuth(app), await adminAuth().createCustomToken(uid));
@@ -81,31 +57,10 @@ async function client(uid) {
   }
   return { uid, db, offset: best.off, rtt: best.rtt };
 }
-/**
- * As the host (Admin SDK), shows question q in the verification room with a server timestamp.
- *
- * @param {string} sid Session id.
- * @param {number} q Question index.
- * @param {number} readS Reading time in seconds.
- * @param {number} T Answer time in seconds.
- * @return {!Promise<void>}
- */
 async function showQuestion(sid, q, readS, T) {
   await adb.doc(`rooms/${HOST}`).set({ sid, code: "VERIFY", hostId: HOST, status: "question", qIndex: q, readS, q: { T, R: readS }, shownSrv: FieldValue.serverTimestamp(), openNowSrv: null });
 }
-/**
- * As the host, stops the room from taking answers.
- *
- * @return {!Promise<*>} The Admin SDK write result.
- */
 const closeQuestion = () => adb.doc(`rooms/${HOST}`).set({ status: "closed" }, { merge: true });
-/**
- * Resolves when this client sees question q with its server timestamp resolved.
- *
- * @param {{db: !Object}} c A client from client().
- * @param {number} q Question index to wait for.
- * @return {!Promise<{r: !Object, seenMono: number}>} The room data and the monotonic time it was seen.
- */
 function waitForQuestion(c, q) {
   return new Promise((resolve) => {
     const stop = onSnapshot(doc(c.db, `rooms/${HOST}`), (s) => {
@@ -114,15 +69,6 @@ function waitForQuestion(c, q) {
     });
   });
 }
-/**
- * Writes one answer for the client under the real rules and reads back its server timestamp.
- *
- * @param {{uid: string, db: !Object}} c A client from client().
- * @param {string} sid Session id.
- * @param {number} q Question index.
- * @return {!Promise<{ok: boolean, latency: number, srv: (number|undefined), code: (string|undefined)}>} Whether the
- *     write was accepted, its latency (ms), and the stored server time or the refusal code.
- */
 async function answer(c, sid, q) {
   const id = `${c.uid}_${sid}_${q}`; const ref = doc(c.db, `rooms/${HOST}/answers/${id}`);
   const t0 = performance.now();
@@ -132,12 +78,6 @@ async function answer(c, sid, q) {
   const s = await getDocFromServer(ref);
   return { ok: true, latency, srv: s.data().srv.toMillis() };
 }
-/**
- * Deletes every answer written in a session, in batches of 400.
- *
- * @param {string} sid Session id.
- * @return {!Promise<void>}
- */
 async function cleanup(sid) {
   const qs = await adb.collection(`rooms/${HOST}/answers`).where("sid", "==", sid).get();
   for (let i = 0; i < qs.docs.length; i += 400) { const b = adb.batch(); qs.docs.slice(i, i + 400).forEach((d) => b.delete(d.ref)); await b.commit(); }

@@ -73,3 +73,25 @@ No High findings left that can be fixed and verified here. Remaining Medium and 
   (Firestore `nam5`); two project members to be added later; rules deploy approved after tests pass (done).
 - Note on cycle 4's open item: JSON-parse retries no longer exist (removed in cycle 5), so that limit is gone.
 - Still NOT RUN: I4 timing, load, I5, I7, C5, C6. I6 has no oracle yet.
+
+## Deep verification, round 3 (2026-10-29)
+- Baseline on branch `verify/firebase-round3`: every suite passed once (unit 53/53, tsc 0, rules 22/22 + 500 cases,
+  coverage 74/74, e2e 43/43, mutation 97.29%); round 2's last CI run was green.
+- I6 oracle built (`verify/i6/`): the real page and Firebase SDK on the Auth and Firestore emulators, three browser
+  contexts, 11 scripted reference clicks across the three recording paths, checked against the page's own export.
+  11/11 recorded exactly once in 3 of 3 runs; the negative control fails as it should. Getting there needed an
+  `auth` entry in firebase.json (the Auth emulator did not start without it).
+- Coach wiring on the Functions emulator with the real firebase-functions and firebase-admin: 13/13. Anthropic is a
+  local fake reached through a preload that rewrites only the API URL; the fake key lives in functions/.secret.local
+  for the run only. iCloud Drive (the project is under Desktop) left a conflict copy `.secret 2.local` holding the
+  fake value; removed, ignored, and the runner now deletes such copies.
+- The 12 "equivalent" mutants were rerun with the emulator suite as the test command: none killed.
+- Runtime: nodejs20 is decommissioned on 2026-10-30 per Google's runtime table; switched to nodejs22 (user decision).
+- Comments cleaned to the user's rules (agent.md): docstrings only on public functions, JS type tags kept (user
+  decision), why-comments only; the index.html overlay went from 289 entries to 17. Code identity proven against
+  b601d21 for every changed file.
+- Findings not fixed (no product change this round): the e2e mock gives every auto-id document the id "x", so
+  mock-only tests cannot catch overwrites of auto-id documents; the export's clock_offset_ms and clock_rtt_ms are
+  always null, as its own field notes say.
+- CI: CI3_LOG
+- Still NOT RUN: I4 timing, load, I5, I7, C5, C6, and the deploy of the coach function (needs Blaze and the secret).

@@ -36,3 +36,9 @@ the quota documents elsewhere, these mutants become meaningful again.
 - `default tier uses the default model` compared with `DEFAULTS.models.default`, which is the value under test, so a
   wrong model id could not fail it. The tier-to-model test now uses literal ids.
 - Refund arithmetic had no test where the counter was above 1, so a refund that reset the counter to 0 passed.
+
+## Round 3 follow-up
+All 12 were rerun with the emulator suite (`functions/test/emulator/`, real firebase-admin on the Firestore emulator)
+as the test command: none was killed (`verify/evidence/round3/wiring/mutation-emulator.json.gz`). That is consistent
+with the arguments above, in particular 5 (a missing document's `get()` returns `undefined`) and 9 to 12 (merge and
+replace give the same quota documents).

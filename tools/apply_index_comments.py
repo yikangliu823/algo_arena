@@ -26,14 +26,9 @@ OVERLAY_DIR = os.path.join(HERE, "index-comments")
 
 
 def load_entries(paths=None):
-    """Loads overlay entries from JSON files.
+    """Returns {"anchor", "comment"} entries tagged with "_src", from `paths` or every index-comments/*.json.
 
-    Args:
-        paths: Overlay files to read. Defaults to every tools/index-comments/*.json in name order.
-
-    Returns:
-        A list of dicts with keys "anchor" (exact line text) and "comment" (the comment block, unindented, lines
-        separated by newlines), each tagged with "_src" naming its file.
+    "anchor" is the exact text of the documented line; "comment" is one unindented /** ... */ block.
     """
     out = []
     for p in paths if paths is not None else sorted(glob.glob(os.path.join(OVERLAY_DIR, "*.json"))):
@@ -43,17 +38,6 @@ def load_entries(paths=None):
 
 
 def script_range(lines):
-    """Finds the inline application script of the page.
-
-    Args:
-        lines: The page split into lines.
-
-    Returns:
-        A (start, end) pair of line indices: the bare "<script>" line and its closing "</script>" line.
-
-    Raises:
-        ValueError: If the page does not contain exactly one bare "<script>" line followed by "</script>".
-    """
     starts = [i for i, l in enumerate(lines) if l.strip() == "<script>"]
     if len(starts) != 1:
         raise ValueError(f"expected one inline <script> line, found {len(starts)}")
@@ -62,15 +46,6 @@ def script_range(lines):
 
 
 def problems(lines, entries):
-    """Lists every reason the overlay cannot be applied safely.
-
-    Args:
-        lines: The uncommented page split into lines.
-        entries: Overlay entries from load_entries().
-
-    Returns:
-        A list of human-readable problem strings; empty when the overlay is safe to apply.
-    """
     errs = []
     start, end = script_range(lines)
     seen = {}
@@ -93,17 +68,9 @@ def problems(lines, entries):
 
 
 def apply(text, entries):
-    """Inserts every overlay comment above its anchor line, indented like the anchor.
+    """Inserts each comment above its anchor line, indented like it; exits if problems() reports anything.
 
-    Args:
-        text: The uncommented page.
-        entries: Overlay entries from load_entries().
-
-    Returns:
-        The page with the comments inserted.
-
-    Raises:
-        SystemExit: If problems() reports anything, so a bad overlay never produces a page.
+    Exiting rather than skipping means a bad overlay never produces a page.
     """
     lines = text.split("\n")
     errs = problems(lines, entries)

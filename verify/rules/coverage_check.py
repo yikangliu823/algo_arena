@@ -21,11 +21,6 @@ src = open(rules_path, encoding="utf-8").read().encode("utf-8")
 
 merged = {}  # (line, start, end) -> {value kind: count}
 def walk(n):
-    """Adds one coverage node and its children to `merged`, summing value counts by source position.
-
-    Args:
-        n: A node of the emulator's ruleCoverage report (sourcePosition, values, children).
-    """
     pos = n["sourcePosition"]; k = (pos["line"], pos["currentOffset"], pos["endOffset"]); vals = merged.setdefault(k, {})
     for v in n.get("values", []):
         kind = next(iter(v["value"]), "empty")  # "empty": the emulator recorded no value (expression short-circuited)

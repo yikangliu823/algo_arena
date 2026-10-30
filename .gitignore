@@ -11,3 +11,5 @@ test/e2e/firebase-config.js
 test/e2e/coach-core.js
 test/e2e/shot_b_review.png
 test/rules/rules-coverage*.json
+verify/i6/www/
+functions/.secret*.local

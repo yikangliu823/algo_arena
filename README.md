@@ -63,7 +63,7 @@ device to Firestore is included in it; `mono` is kept alongside for analysis, la
 3. Create a Cloud Firestore database in production mode. Pick its location deliberately: it cannot be changed later, and the IRB protocol may ask where data is stored.
 4. Authentication: enable the Google sign-in provider. Under authorized domains, add `yikangliu823.github.io`.
 5. Register a Web app and copy its `firebaseConfig`. This config is not a secret (access is controlled by the rules), but keep the project id handy.
-6. On your computer: install Node 20+, Java 21+ (firebase-tools 15 refuses older Java for the emulator), and the Firebase CLI
+6. On your computer: install Node 22+ (the functions runtime is nodejs22; nodejs20 was decommissioned on 2026-10-30), Java 21+ (firebase-tools 15 refuses older Java for the emulator), and the Firebase CLI
    (`npm install -g firebase-tools@15.33.0`, the version CI uses), then `firebase login`.
 7. Only with Blaze: create an Anthropic API key in the Anthropic Console for stage B2. Do not paste it into chat or into the page; it will be stored with `firebase functions:secrets:set ANTHROPIC_API_KEY`.
 

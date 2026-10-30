@@ -1,218 +1,26 @@
 [
  {
-  "anchor": "function logRef(q, k, kind, phase, sid) {",
-  "comment": "/**\n * Records that a question reference was opened, for research logging.\n *\n * @param {number} q Question index the reference belongs to.\n * @param {number} k Index of the reference within the question.\n * @param {string} kind Reference kind tag (for example \"video\"); omitted from the event when empty.\n * @param {string=} phase Phase label stored on the event; defaults to \"live\".\n * @param {string=} sid Session id; required for the post-game path, which appends to S.uid's pub record only if it still has this sid.\n */"
- },
- {
   "anchor": "function rankList(board, names) {",
-  "comment": "/**\n * Turns a scoreboard map into a ranked list.\n *\n * Sorts by score descending, then cumulative correct-answer time ascending, then name, and numbers the ranks from 1.\n *\n * @param {?Object<string, !Object>} board Map of uid to board entry ({s, st, c, n, ft, ...}).\n * @param {?function(string): string} names Resolves a uid to a display name; \"Player\" is the fallback.\n * @return {!Array<!Object>} Board entries with uid, name and rank added, in rank order.\n */"
- },
- {
-  "anchor": "const ordinal = (n) => n + ([\"th\", \"st\", \"nd\", \"rd\"][(n % 100 - 20) % 10] || [\"th\", \"st\", \"nd\", \"rd\"][n % 100] || \"th\");",
-  "comment": "/**\n * Formats a number with its English ordinal suffix (1st, 2nd, 11th, 23rd).\n *\n * @param {number} n The number to format.\n * @return {string} The number followed by its suffix.\n */"
- },
- {
-  "anchor": "function boardHtml(rows, meUid, limit = 5, key = \"\") {",
-  "comment": "/**\n * Renders the top rows of a ranked leaderboard as HTML.\n *\n * @param {!Array<!Object>} rows Ranked rows from rankList().\n * @param {?string} meUid Uid whose row is highlighted as the viewer's.\n * @param {number=} limit Maximum number of rows shown; defaults to 5.\n * @param {string=} key Count-up key prefix; when set, each score animates from its previous value via cnt().\n * @return {string} The leaderboard markup.\n */"
- },
- {
-  "anchor": "function cnt(key, from, to) { if (COUNTED.has(key) || from === to) return Number(to).toLocaleString(); return `<span data-count-key=\"${esc(key)}\" data-count-to=\"${to}\" data-count-from=\"${from}\">${Number(from).toLocaleString()}</span>`; }",
-  "comment": "/**\n * Returns markup for a number that animates from one value to another once.\n *\n * If the key was already animated (it is in COUNTED) or the values are equal, the final value is returned as plain text.\n *\n * @param {string} key Unique key for this count-up.\n * @param {number} from Starting value.\n * @param {number} to Final value.\n * @return {string} A formatted number or a span carrying data-count-* attributes.\n */"
- },
- {
-  "anchor": "function runCountUps() { $$(\"[data-count-key]\").forEach((el) => { if (COUNTED.has(el.dataset.countKey)) return; COUNTED.add(el.dataset.countKey); countUp(el, Number(el.dataset.countFrom), Number(el.dataset.countTo)); }); }",
-  "comment": "/**\n * Starts the count-up animation for every pending data-count-key element on the page.\n *\n * Each key is added to COUNTED so it animates only once.\n */"
- },
- {
-  "anchor": "ACT.launch = async (el) => {",
-  "comment": "/**\n * Loads a question set and opens the host launch view for it.\n *\n * Shows a toast instead when the set is empty or a question fails validateQ(). Stores the set in S.launchSet.\n *\n * @param {!Element} el The clicked element; its data-id names the set.\n * @return {!Promise<void>}\n */"
- },
- {
-  "anchor": "VIEWS.launch = () => {",
-  "comment": "/**\n * Renders the launch view, where the host sets answer and reading times before creating a room.\n *\n * @return {string} The view markup for S.launchSet.\n */"
+  "comment": "/** Ties break on lower ft (summed elapsed ms of correct answers), then on name. */"
  },
  {
   "anchor": "async function pidOf(uid) { const H = S.host; H.pids = H.pids || {}; if (!H.pids[uid]) H.pids[uid] = \"P-\" + (await sha256hex((S.profile.salt || \"\") + \":\" + uid)).slice(0, 12); return H.pids[uid]; }",
-  "comment": "/**\n * Returns the host-salted pseudonymous participant id for a uid, cached in S.host.pids.\n *\n * @param {string} uid The participant's user id.\n * @return {!Promise<string>} An id of the form \"P-\" plus 12 hex digits.\n */"
+  "comment": "/** Pseudonymous research id salted with the host's profile salt; finishSession() repeats this formula inline, so the two must stay identical. */"
  },
  {
   "anchor": "async function qkeyOf(q) { return (await sha256hex([q.prompt, q.img, ...q.options].join(\"\\u241e\"))).slice(0, 16); }",
-  "comment": "/**\n * Computes a content key for a question from its prompt, image and options.\n *\n * @param {!Object} q The question.\n * @return {!Promise<string>} The first 16 hex digits of the SHA-256 hash.\n */"
- },
- {
-  "anchor": "ACT.createRoom = async (btn) => {",
-  "comment": "/**\n * Creates a live room for S.launchSet and starts hosting it.\n *\n * Reads the time inputs, offers to end a still-open previous room, picks an unused room code, generates the session key pair,\n * writes the question content, session metadata and room documents, initializes S.host, then calls startHost().\n *\n * @param {!HTMLButtonElement} btn The Create room button; disabled while working.\n * @return {!Promise<void>}\n */"
- },
- {
-  "anchor": "async function startHost() {",
-  "comment": "/**\n * Subscribes the host to its room, answers and player records, then starts the host ticker.\n *\n * Each snapshot updates S.host and calls hostChanged(). Also joins the named realtime channel as host and starts the lobby music.\n *\n * @return {!Promise<void>}\n */"
- },
- {
-  "anchor": "function hostChanged() {",
-  "comment": "/**\n * Decrypts newly arrived answers and schedules a debounced host view rerender.\n */"
+  "comment": "/** Keyed on content rather than id, so a question copied into another set (copies get new ids) still counts as a repeat exposure. */"
  },
  {
   "anchor": "async function decryptCurrent(idx) {",
-  "comment": "/**\n * Decrypts every player's sealed answer for one question into S.host.dec.\n *\n * A decrypted choice is kept only if its question index and session id match and it is 0 to 3; otherwise null is stored.\n *\n * @param {number=} idx Question index; defaults to the room's current question.\n * @return {!Promise<void>}\n */"
- },
- {
-  "anchor": "function answeredUids(i) { const H = S.host; return [...H.players.keys()].filter((u) => { const a = ansOf(u)[i]; return a && a.ct; }); }",
-  "comment": "/**\n * Lists the players who have submitted a sealed answer for a question.\n *\n * @param {number} i Question index.\n * @return {!Array<string>} Uids of the players who answered.\n */"
- },
- {
-  "anchor": "function hostTick() {",
-  "comment": "/**\n * Runs the host's periodic timer step during a question.\n *\n * Updates the countdown ring, rerenders when answers open, and closes the question once everyone has answered or the deadline\n * has passed by more than 600 ms.\n */"
+  "comment": "/** A sealed answer counts only if its embedded question index and session id match, so a ciphertext replayed from another question or session is discarded. */"
  },
  {
   "anchor": "async function hostWrite(patch) {",
-  "comment": "/**\n * Writes a patch to the room document with an incremented version.\n *\n * Applies it locally first (server-time sentinels replaced by hostNowEst()), then re-reads the room to pick up server times,\n * nudges players and rerenders.\n *\n * @param {!Object} patch Room fields to change.\n * @return {!Promise<void>}\n */"
- },
- {
-  "anchor": "async function hostEvent(t, extra = {}) { const H = S.host; H.meta.hostEvents = [...(H.meta.hostEvents || []), { t, at: now(), ...extra }].slice(-MAX_EVENTS); await dupd(`${P.sessions()}/${H.sid}`, { hostEvents: H.meta.hostEvents }).catch(() => {}); }",
-  "comment": "/**\n * Appends a host event to the session metadata, keeping the last MAX_EVENTS; write errors are ignored.\n *\n * @param {string} t Event type.\n * @param {!Object=} extra Extra event fields.\n * @return {!Promise<void>}\n */"
- },
- {
-  "anchor": "ACT.hStart = async () => { const H = S.host; if (!H.players.size) return toast(\"Wait for at least one player to join.\"); AUDIO.stopLoop(); H.meta.startAt = now(); await dupd(`${P.sessions()}/${H.sid}`, { startAt: H.meta.startAt }); await showQuestion(0); };",
-  "comment": "/**\n * Starts the game at the first question, provided at least one player has joined.\n *\n * @return {!Promise<void>}\n */"
- },
- {
-  "anchor": "async function showQuestion(i) {",
-  "comment": "/**\n * Shows a question to the room, starting its reading phase, and logs the event.\n *\n * @param {number} i Index of the question in S.host.qs.\n * @return {!Promise<void>}\n */"
- },
- {
-  "anchor": "ACT.hOpenNow = async () => {",
-  "comment": "/**\n * Skips the remaining reading time so answers open immediately.\n *\n * @return {!Promise<void>}\n */"
- },
- {
-  "anchor": "async function closeQuestion(reason) {",
-  "comment": "/**\n * Closes answering for the current question and publishes the answer distribution.\n *\n * @param {string} reason Why it closed, such as \"time_up\", \"all_answered\" or \"host_stopped\".\n * @return {!Promise<void>}\n */"
- },
- {
-  "anchor": "ACT.hClose = () => closeQuestion(\"host_stopped\");",
-  "comment": "/**\n * Closes the current question at the host's request.\n *\n * @return {!Promise<void>}\n */"
- },
- {
-  "anchor": "async function loadExpoShard(shard) { const H = S.host; if (!H.expo[shard]) H.expo[shard] = clone((await dget(`${P.expo()}/s${shard}`)) || { m: {} }); return H.expo[shard]; }",
-  "comment": "/**\n * Loads and caches one shard of the host's per-participant question exposure counts.\n *\n * @param {number} shard Shard number, taken from the first hex digit of the question key.\n * @return {!Promise<!Object>} The shard, shaped {m: Object<string, number>}.\n */"
+  "comment": "/** The local copy replaces server-time sentinels with hostNowEst() until the re-read returns the real server values. */"
  },
  {
   "anchor": "ACT.hReveal = async (btn) => {",
-  "comment": "/**\n * Reveals the current question's answer and scores it.\n *\n * Closes the question if still open, computes each player's elapsed time and points (500 to 1000 when correct), updates the board\n * and exposure counts, writes the per-question research log once, then publishes the reveal with summary statistics.\n *\n * @param {?HTMLButtonElement} btn The Reveal button, disabled while working; may be null.\n * @return {!Promise<void>}\n */"
- },
- {
-  "anchor": "ACT.hNext = async () => { const H = S.host; const i = H.room.qIndex + 1; if (i < H.qs.length) await showQuestion(i); else await ACT.hEnd(null, true); };",
-  "comment": "/**\n * Advances to the next question, or ends the game after the last one.\n *\n * @return {!Promise<void>}\n */"
- },
- {
-  "anchor": "ACT.hEnd = async (el, natural) => {",
-  "comment": "/**\n * Ends the game for everyone, asking for confirmation unless it ended naturally.\n *\n * @param {?Element} el The clicked element (unused).\n * @param {*} natural Only a literal true skips the confirmation; click handlers pass an event here.\n * @return {!Promise<void>}\n */"
- },
- {
-  "anchor": "ACT.hDash = () => { S.host.showDash = !S.host.showDash; rerender(); };",
-  "comment": "/**\n * Toggles the host's live dashboard panel.\n */"
- },
- {
-  "anchor": "async function finishSession(room, silent) {",
-  "comment": "/**\n * Marks a room ended and writes the final participant, event and board records to its session.\n *\n * Works for the current game or a stale room found at creation. Unless silent, it then starts AI report generation.\n *\n * @param {!Object} room The room document to finish.\n * @param {boolean} silent True to skip AI report generation.\n * @return {!Promise<void>}\n */"
- },
- {
-  "anchor": "async function autoResume() {",
-  "comment": "/**\n * Looks for a hosted room or joined game that is still open, so Home can offer to resume it.\n *\n * Sets S.resumeRoom or S.resumePlay; after a device takeover it resumes the game directly.\n *\n * @return {!Promise<void>}\n */"
- },
- {
-  "anchor": "ACT.resumeHost = () => resumeHost(S.resumeRoom);",
-  "comment": "/**\n * Resumes hosting the room found by autoResume().\n *\n * @return {!Promise<void>}\n */"
- },
- {
-  "anchor": "ACT.resumePlay = () => enterRoom(S.resumePlay);",
-  "comment": "/**\n * Rejoins the game found by autoResume().\n *\n * @return {!Promise<void>}\n */"
- },
- {
-  "anchor": "async function resumeHost(r) {",
-  "comment": "/**\n * Rebuilds S.host from a room's stored session, keys and question content, then resumes hosting.\n *\n * Records a host device takeover when S.tookOverFrom is set; shows a toast if the records are missing.\n *\n * @param {!Object} r The room document.\n * @return {!Promise<void>}\n */"
- },
- {
-  "anchor": "function hostName(uid) { const p = S.host.players.get(uid); return (p && p.name) || \"Player\"; }",
-  "comment": "/**\n * Returns a player's display name from the host's player list, or \"Player\".\n *\n * @param {string} uid The player's user id.\n * @return {string} The display name.\n */"
- },
- {
-  "anchor": "function playerStats(uid) {",
-  "comment": "/**\n * Returns a player's board entry from the host's room, or a zeroed entry.\n *\n * @param {string} uid The player's user id.\n * @return {!Object} The entry ({s, st, c, n, ...}).\n */"
- },
- {
-  "anchor": "function hostDash() {",
-  "comment": "/**\n * Renders the host's live dashboard: question stats, answer distribution, participant table and leaderboard.\n *\n * @return {string} The dashboard markup.\n */"
- },
- {
-  "anchor": "VIEWS.host = () => {",
-  "comment": "/**\n * Renders the host stage for the room's current status (lobby, question, closed, reveal or ended).\n *\n * @return {string} The view markup.\n */"
- },
- {
-  "anchor": "  const bar = (inner) => `<div class=\"stagebar\"><span class=\"chip\">Room ${esc(r.code)}</span><span class=\"chip\">${n} player${n === 1 ? \"\" : \"s\"}</span>${inner}<span class=\"spacer\"></span>",
-  "comment": "/**\n * Renders the stage bar with room chips, sound, dashboard and end-game controls.\n *\n * @param {string} inner Extra markup placed after the room and player chips.\n * @return {string} The bar markup.\n */"
- },
- {
-  "anchor": "AFTER.host = () => { const H = S.host; if (!H) return; hostTick(); runCountUps(); };",
-  "comment": "/**\n * Runs after the host view renders: a timer tick and any pending score count-ups.\n */"
- },
- {
-  "anchor": "function joinUrl(code) { return ARTIFACT_URL ? ARTIFACT_URL + \"?join=\" + code : \"\"; }",
-  "comment": "/**\n * Builds the join link for a room code.\n *\n * @param {string} code The room code.\n * @return {string} The page URL with ?join=code, or \"\" when ARTIFACT_URL is empty.\n */"
- },
- {
-  "anchor": "function qrSvg(text) {",
-  "comment": "/**\n * Renders a QR code for a text as inline SVG using the global qrcode library.\n *\n * @param {string} text Text to encode; a placeholder is used when empty.\n * @return {string} SVG markup, a fallback message when the library is missing, or \"\" on error.\n */"
- },
- {
-  "anchor": "ACT.join = async (btn) => {",
-  "comment": "/**\n * Joins the open room matching the entered code after checking the format and consent box.\n *\n * @param {!HTMLButtonElement} btn The Join button; disabled while working.\n * @return {!Promise<void>}\n */"
- },
- {
-  "anchor": "async function ensureMyKey() {",
-  "comment": "/**\n * Returns the user's stored key pair, generating and saving one if missing.\n *\n * @return {!Promise<{priv: *, pub: *, at: number}>} The key record.\n */"
- },
- {
-  "anchor": "async function enterRoom(room, consented) {",
-  "comment": "/**\n * Joins a room as a participant and opens the play view.\n *\n * Creates or updates the user's pub record (logging a reconnect or device takeover), records the game in joined, sets up S.play\n * and its listeners, syncs the clock, and reloads any answers already locked in.\n *\n * @param {!Object} room The room document.\n * @param {boolean=} consented True when the consent box was just confirmed.\n * @return {!Promise<void>}\n */"
- },
- {
-  "anchor": "function onPlayRoom(d) {",
-  "comment": "/**\n * Handles a room update on the participant side.\n *\n * Ignores older versions, logs shown and revealed events, plays sounds, saves reveals for review, loads the review list and\n * watches the AI report when the game ends, then rerenders.\n *\n * @param {!Object} d The room document.\n */"
- },
- {
-  "anchor": "function saveReview(d) {",
-  "comment": "/**\n * Saves a revealed question, with the participant's own result, to their private review records.\n *\n * @param {!Object} d The room document in reveal status.\n */"
- },
- {
-  "anchor": "function mergedReview() { const p = S.play; const m = new Map(((p && p.review) || []).map((x) => [x.i, x])); for (const x of Object.values((p && p.rvLocal) || {})) m.set(x.i, x); return [...m.values()].sort((a, b) => a.i - b.i); }",
-  "comment": "/**\n * Merges the loaded review list with reviews saved locally this game, by question index.\n *\n * @return {!Array<!Object>} Review items sorted by question index.\n */"
- },
- {
-  "anchor": "function reviewHtml(items, sid, emptyMsg) {",
-  "comment": "/**\n * Renders review items as expandable question cards with the answer, explanation and references.\n *\n * @param {?Array<!Object>} items Review items.\n * @param {string} sid Session id passed to refsHtml() for reference logging.\n * @param {string=} emptyMsg Message shown when there are no items.\n * @return {string} The review markup.\n */"
- },
- {
-  "anchor": "ACT.myReview = async (el) => {",
-  "comment": "/**\n * Opens a dialog reviewing every revealed question of a past game.\n *\n * @param {!Element} el The clicked element; its data-sid names the session.\n * @return {!Promise<void>}\n */"
- },
- {
-  "anchor": "function pEvent(t, extra) {",
-  "comment": "/**\n * Buffers a participant event and schedules flushEvents() in 1.2 seconds.\n *\n * @param {string} t Event type.\n * @param {!Object} extra Extra event fields.\n */"
- },
- {
-  "anchor": "async function flushEvents() {",
-  "comment": "/**\n * Appends buffered participant events to the user's pub record, keeping the last MAX_EVENTS.\n *\n * On failure the events are put back in the buffer.\n *\n * @return {!Promise<void>}\n */"
- },
- {
-  "anchor": "function myAnswer(i) { const p = S.play; return p && p.myAns && p.myAns[i]; }",
-  "comment": "/**\n * Returns the participant's own locked answer for a question, if any.\n *\n * @param {number} i Question index.\n * @return {*} The answer record, or a falsy value.\n */"
- },
- {
-  "anchor": "function playTick() {",
-  "comment": "/**\n * Runs the participant's periodic timer step during an unanswered question.\n *\n * Updates the countdown ring, records the monotonic time answers opened, and rerenders when answers open or time runs out.\n */"
- },
- {
-  "anchor": "ACT.answer = async (el) => {",
-  "comment": "/**\n * Submits the participant's chosen option, sealed with the room's public key.\n *\n * Refuses during reading time and after the deadline. On a write error it recovers an answer already stored, or marks the\n * question timed out when the database refused it after answers opened.\n *\n * @param {!Element} el The clicked option; its data-i is the option index.\n * @return {!Promise<void>}\n */"
+  "comment": "/**\n * Idempotent per question: when boardAsOf >= qIndex the board, exposure counts and research log are not written again.\n * Elapsed time prefers the server timestamp (a.srv) and falls back to the device's monotonic delta (a.mono).\n */"
  }
 ]

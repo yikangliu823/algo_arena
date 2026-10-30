@@ -14,26 +14,9 @@ import csv, sys
 import numpy as np
 ITEMS = ["grounded_1to5", "actionable_1to5", "clear_1to5"]
 def load(p):
-    """Reads a filled rating sheet.
-
-    Args:
-        p: Path of a CSV with an "item" column.
-
-    Returns:
-        A dict mapping each item id (string) to its row (a dict of column name to string).
-    """
     return {r["item"]: r for r in csv.DictReader(open(p))}
 def wkappa(a, b, k=5):
-    """Computes Cohen's kappa with quadratic weights for two raters.
-
-    Args:
-        a: Ratings from rater 1, integers in 1..k.
-        b: Ratings from rater 2 for the same items, integers in 1..k.
-        k: Number of rating categories.
-
-    Returns:
-        The weighted kappa as a float, or None when it is undefined (no variance in the expected agreement).
-    """
+    """Cohen's kappa with quadratic weights; ratings are integers in 1..k."""
     a, b = np.asarray(a) - 1, np.asarray(b) - 1; O = np.zeros((k, k))
     for x, y in zip(a, b): O[x, y] += 1
     W = np.array([[(i - j) ** 2 / (k - 1) ** 2 for j in range(k)] for i in range(k)]); E = np.outer(O.sum(1), O.sum(0)) / O.sum()
