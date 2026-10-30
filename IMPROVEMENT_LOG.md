@@ -65,8 +65,11 @@ No High findings left that can be fixed and verified here. Remaining Medium and 
   added JSDoc type (optional fields); fixed.
 - Documentation fixes: Java 21+ (firebase-tools 15 refuses older), Spark with `coach: false` until Blaze, load sizes
   120 and 240 (not 150), survivor line numbers after the comments, round-1 date (it was written in UTC).
-- CI: CI_LOG_LINE
+- CI on `verify/firebase-round2`: run 1 failed in browser-mock before any test (Playwright 1.57.0 cannot install
+  Chromium on ubuntu-latest, now 26.04); fixed by pinning that job to ubuntu-24.04. Run 2 green on all three jobs
+  with the same numbers as locally: https://github.com/yikangliu823/algo_arena/actions/runs/41004361852. Also failed run: https://github.com/yikangliu823/algo_arena/actions/runs/41004048849.
+- firestore.rules deployed to algoarena-for-research from the CI-tested file (user approved).
 - Decisions (user): Blaze approved (not yet enabled); staging uses the current project algoarena-for-research
-  (Firestore `nam5`); two project members to be added later; rules deploy approved after tests pass.
+  (Firestore `nam5`); two project members to be added later; rules deploy approved after tests pass (done).
 - Note on cycle 4's open item: JSON-parse retries no longer exist (removed in cycle 5), so that limit is gone.
 - Still NOT RUN: I4 timing, load, I5, I7, C5, C6. I6 has no oracle yet.
