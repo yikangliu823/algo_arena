@@ -44,3 +44,29 @@ No High findings left that can be fixed and verified here. Remaining Medium and 
 - Threat model (STRIDE) mapped to tests; it exposed one untested control (admin and AI-host lists), now covered by a rules test.
 - Still NOT RUN: everything that needs the emulator, CI, staging, the instructor or students. I6 (reference clicks) has no oracle yet.
 - Browser mock suite was intermittent in the fresh-unzip check: 42/43 once, 43/43 in five reruns; the failing check was not captured. Next round: run it 20 times with full output and fix or widen the timing-bound check that flakes.
+
+## Deep verification, round 2 (2026-10-29)
+- Baseline: test/e2e run 20 times with full output. 18/20; both failures were "A's score follows the server elapsed
+  time", only when elapsed ms % 30 == 15: the test used Python `round` (half to even) against the page's JavaScript
+  `Math.round` (half up). The test was wrong, not the page. Fixed; 20/20 (local, mock: regression only).
+- Rules on the emulator (v1.22.0): emulator and reference model agreed on every case once the property test could
+  run. Fixes were all in the tests: one Firestore instance per context, serial test files (a shared clearFirestore
+  raced), per-file coverage capture (loading rules resets the counters), and a biased generator (the uniform one
+  reached the answer-window check about once in 4,600 cases; it now must reach all 6 window paths). Coverage gate
+  `verify/rules/coverage_check.py` found 17 condition gaps; 5 new example tests closed them. Result: 22/22, 500
+  cases with 0 disagreements, 74/74 conditions seen true and false. firestore.rules logic unchanged.
+- Mutation (StrykerJS 8.7.1, local): 77.15% with the round-1 tests; about 21 new unit tests, 97.29% (430 killed,
+  12 survived, each argued equivalent in `verify/evidence/round2/MUTATION_SURVIVORS.md`). Three test defects found:
+  an in-place sort of a shared frozen schema, a model test compared against the value under test, no refund test
+  above 1.
+- File headers, Google-style comments and MIT LICENSE.md (user request). site/index.html gets its comments from an
+  overlay (`tools/apply_index_comments.py`, `tools/index-comments/`), so the frozen 2.1.1 source stays untouched.
+  All suites re-run after the comments with the same results. Pinning tsc 6.0.3 in CI exposed a type error in one
+  added JSDoc type (optional fields); fixed.
+- Documentation fixes: Java 21+ (firebase-tools 15 refuses older), Spark with `coach: false` until Blaze, load sizes
+  120 and 240 (not 150), survivor line numbers after the comments, round-1 date (it was written in UTC).
+- CI: CI_LOG_LINE
+- Decisions (user): Blaze approved (not yet enabled); staging uses the current project algoarena-for-research
+  (Firestore `nam5`); two project members to be added later; rules deploy approved after tests pass.
+- Note on cycle 4's open item: JSON-parse retries no longer exist (removed in cycle 5), so that limit is gone.
+- Still NOT RUN: I4 timing, load, I5, I7, C5, C6. I6 has no oracle yet.

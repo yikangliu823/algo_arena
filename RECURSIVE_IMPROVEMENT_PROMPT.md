@@ -22,9 +22,9 @@ file names and documents in English.
 
 | Check | Result | Where it ran |
 |---|---|---|
-| functions unit tests (`cd functions && node --test test/*.test.mjs`) | 32/32 pass | developer sandbox |
+| functions unit tests (`cd functions && node --test test/*.test.mjs`) | 53/53 pass | developer machine (round 2) |
 | browser end-to-end on mock Firebase (`test/e2e`: `python3 build_app.py && python3 e2e_b.py`) | 43/43 pass | developer sandbox |
-| Firestore rules tests in the emulator (`test/rules`) | NOT RUN | needs the user's machine |
+| Firestore rules tests in the emulator (`test/rules`) | 22/22 and 500 generated cases, coverage 74/74 | emulator (round 2) |
 | functions wiring (`index.js`, `deps.js`) with real firebase-functions / firebase-admin | NOT RUN | needs the user's machine |
 | real deployment, two devices, iPhone Safari sign-in | NOT RUN | needs the user |
 
@@ -95,9 +95,10 @@ file names and documents in English.
 ## 7. Open items (carry forward; mark done with evidence)
 
 User-run:
-- [ ] Decide on the Blaze plan. Until then deploy on the free Spark plan with `coach: false` (AI reports hidden).
-- [ ] Add the professor as a member of the Firebase project, so access does not depend on one account.
-- [ ] Rules tests in the Firestore emulator (`test/rules`), then deploy the rules.
+- [x] Decide on the Blaze plan: approved in round 2. Enable it and set the key as a secret; `coach: false` until the
+  function is deployed and tested.
+- [ ] Add the two project members (user decision, round 2), so access does not depend on one account.
+- [x] Rules tests in the Firestore emulator (`test/rules`): round 2, see verify/EVIDENCE.md. Deploy: see EVIDENCE.md.
 - [ ] `cd functions && npm install && npm test`; functions emulator or deploy; set `ANTHROPIC_API_KEY` as a secret.
 - [ ] Two-device test with two Google accounts, including iPhone Safari sign-in.
 - [ ] Spend limit in the Anthropic Console; budget alert in Google Cloud Billing.

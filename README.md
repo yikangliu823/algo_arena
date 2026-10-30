@@ -76,8 +76,8 @@ cd test/rules && npm install && cd ../..
 firebase emulators:exec --only firestore --project demo-algoarena "npm --prefix test/rules test"
 ```
 
-All tests should pass. They were written without an emulator available, so they have not been run yet.
-If a test fails, send the output; a failure can be in the rules or in the test.
+All tests should pass. Round 2 ran them on the emulator: 22/22 example tests and 500 generated cases (see
+verify/EVIDENCE.md). If a test fails, send the output; a failure can be in the rules or in the test.
 
 ## Deploy the rules (after the tests pass)
 
@@ -127,13 +127,14 @@ Anthropic Console and a budget alert in Google Cloud Billing.
 - `functions/index.js` and `functions/deps.js` are wired to firebase-functions and firebase-admin, which were not installable in the development sandbox. The logic in coach-core.js is unit-tested; the wiring is verified only once you run `npm test` and the functions emulator or a deploy.
 - Uploading images or PDFs to questions is off; references are links and notes.
 - Google sign-in uses a pop-up, falling back to a redirect when pop-ups are blocked. Test it on iPhone Safari before class.
-- The rules have not yet been run in the emulator. The browser test checks the page against a JavaScript mirror of the rules, not the rules file.
+- The browser test checks the page against a JavaScript mirror of the rules, not the rules file; the rules file itself
+  is tested on the emulator (`test/rules`).
 
 ## Verification kit (verify/)
 
 Evidence status and run order: `verify/EVIDENCE.md`. Threat model: `verify/THREAT_MODEL.md`. CI: `.github/workflows/verify.yml`.
 
-- Rules on the real engine: `firebase emulators:exec --only firestore --project demo-algoarena "bash test/rules/run-with-coverage.sh"` (example tests plus 200 property-based cases, coverage report).
+- Rules on the real engine: `firebase emulators:exec --only firestore --project demo-algoarena "bash test/rules/run-with-coverage.sh"` (22 example tests plus 500 property-based cases, coverage gate).
 - Mutation testing: `cd functions && npm install && npm run mutation` (threshold 70%).
 - Timing and load on a staging project: `verify/staging/driver.mjs`, then `python3 verify/analysis/bland_altman.py results/timing.csv` (pass: 95% limits of agreement within +/-250 ms).
 - AI reports: `verify/ai/export-reports.mjs`, `grounding.mjs`, `reconcile.mjs`, `rating_sheet.py`, `kappa.py`.
