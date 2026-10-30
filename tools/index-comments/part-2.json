@@ -1,0 +1,318 @@
+[
+ {
+  "anchor": "function displacedOverlay() {",
+  "comment": "/**\n * Returns the blocking dialog shown when this account became active on another device.\n *\n * @return {string} HTML for the overlay, whose button triggers ACT.retake.\n */"
+ },
+ {
+  "anchor": "ACT.retake = async () => { S.displaced = false; await claimDevice(); go(\"home\"); await loadHome(); await autoResume(); };",
+  "comment": "/**\n * Takes this device back after it was displaced by another device.\n *\n * Clears S.displaced, re-claims the device record, navigates Home, reloads its lists, and resumes any live game.\n * @return {!Promise<void>}\n */"
+ },
+ {
+  "anchor": "async function loadHome() {",
+  "comment": "/**\n * Loads the Home lists in parallel: the user's sets, hosted sessions, joined games, the curated library, and bank metadata.\n *\n * Results are stored on S (lists sorted newest first); a failed load is only logged. Re-renders if still on Home.\n * @return {!Promise<void>}\n */"
+ },
+ {
+  "anchor": "function joinPrefill() {",
+  "comment": "/**\n * Returns a room code to prefill in the Join box, taken from the \"join\" query parameter or \"join=\" hash of this\n * URL, or else from the referrer's \"join\" parameter.\n *\n * @return {string} The upper-cased code, or \"\" when none is found.\n */"
+ },
+ {
+  "anchor": "VIEWS.home = () => {",
+  "comment": "/**\n * Renders the Home view: resume notices, the host and join tiles, the tab bar, and the active tab's content.\n *\n * The tab comes from S.args.tab (default \"sets\").\n * @return {string} HTML for the view.\n */"
+ },
+ {
+  "anchor": "ACT.tab = (el) => { S.args = { ...S.args, tab: el.dataset.tab }; rerender(); if (el.dataset.tab === \"bank\" && !S.bank) loadBank(); if (el.dataset.tab === \"sets\") { const t = $(\".tabs\"); t && t.scrollIntoView({ behavior: \"smooth\" }); } };",
+  "comment": "/**\n * Switches the Home tab to the clicked tab.\n *\n * Loads the built-in bank on first visit to the bank tab, and scrolls the tab bar into view for the sets tab.\n * @param {!Element} el The tab button; its data-tab names the tab.\n */"
+ },
+ {
+  "anchor": "function setMeta(s) { return [s.course, s.week && \"Week \" + s.week, s.topic].filter(Boolean).map(esc).join(\", \"); }",
+  "comment": "/**\n * Formats a set's optional course, week, and topic as an escaped, comma-separated line.\n *\n * @param {!Object} s The set metadata.\n * @return {string} The joined details, or \"\" when none are set.\n */"
+ },
+ {
+  "anchor": "function homeSets() {",
+  "comment": "/**\n * Renders the \"My question sets\" tab from S.sets, with host, edit, duplicate, and delete buttons per set.\n *\n * @return {string} HTML for the tab (a loading or empty state when appropriate).\n */"
+ },
+ {
+  "anchor": "function homeSessions() {",
+  "comment": "/**\n * Renders the \"Hosted sessions\" tab from S.sessions, with export-all buttons and a dashboard link per session.\n *\n * @return {string} HTML for the tab (a loading or empty state when appropriate).\n */"
+ },
+ {
+  "anchor": "function homeReports() {",
+  "comment": "/**\n * Renders the \"My live reports\" tab from S.joined, listing games the user played with review and report buttons.\n *\n * @return {string} HTML for the tab (a loading or empty state when appropriate).\n */"
+ },
+ {
+  "anchor": "function libItems() { return [...CURATED, ...((S.lib && S.lib.items) || [])]; }",
+  "comment": "/**\n * Returns the learning-resource library: the built-in CURATED videos followed by editor-added items in S.lib.\n *\n * @return {!Array<!Object>} The combined list.\n */"
+ },
+ {
+  "anchor": "function homeLib() {",
+  "comment": "/**\n * Renders the \"Learning resources\" tab: the video table, plus an add-video form and remove buttons for admins.\n *\n * @return {string} HTML for the tab.\n */"
+ },
+ {
+  "anchor": "ACT.libAdd = async () => {",
+  "comment": "/**\n * Adds a YouTube video from the library form to the shared library document (meta/lib).\n *\n * Requires title, URL, and keywords, a YouTube URL, and the \"checked the link\" box; otherwise shows a toast.\n * @return {!Promise<void>}\n */"
+ },
+ {
+  "anchor": "ACT.libDel = async (el) => { const items = clone((S.lib && S.lib.items) || []).filter((x) => x.id !== el.dataset.id); const doc = { items, updatedAt: now() }; await dset(P.lib, doc); S.lib = doc; rerender(); };",
+  "comment": "/**\n * Removes an editor-added video from the shared library document and re-renders.\n *\n * @param {!Element} el The remove button; its data-id is the item id.\n * @return {!Promise<void>}\n */"
+ },
+ {
+  "anchor": "async function loadSet(id) {",
+  "comment": "/**\n * Loads a question set's metadata and its questions, sorted by order then id.\n *\n * @param {string} id The set id.\n * @return {!Promise<{id: string, meta: !Object, qs: !Array<!Object>}>} The set; each question carries its id.\n * @throws {Error} When the set document no longer exists.\n */"
+ },
+ {
+  "anchor": "async function touchSet(id, count) { await dupd(`${P.sets()}/${id}`, { updatedAt: now(), count }); }",
+  "comment": "/**\n * Updates a set's updatedAt timestamp and question count.\n *\n * @param {string} id The set id.\n * @param {number} count The current number of questions.\n * @return {!Promise<void>}\n */"
+ },
+ {
+  "anchor": "ACT.newSet = async () => {",
+  "comment": "/**\n * Creates an empty \"Untitled set\" with a random id and opens it in the set editor.\n *\n * @return {!Promise<void>}\n */"
+ },
+ {
+  "anchor": "ACT.editSet = async (el) => { go(\"set\", { id: el.dataset.id }); await openSetEditor(el.dataset.id); };",
+  "comment": "/**\n * Navigates to the set editor for the clicked set and loads it.\n *\n * @param {!Element} el The button; its data-id is the set id.\n * @return {!Promise<void>}\n */"
+ },
+ {
+  "anchor": "async function openSetEditor(id) { S.edit = null; rerender(); S.edit = await loadSet(id); if (S.view === \"set\") rerender(); }",
+  "comment": "/**\n * Loads a set into S.edit for the editor, showing a loading state meanwhile.\n *\n * @param {string} id The set id.\n * @return {!Promise<void>}\n */"
+ },
+ {
+  "anchor": "ACT.dupSet = async (el) => {",
+  "comment": "/**\n * Duplicates the clicked set, copying its metadata (title suffixed \"(copy)\") and all questions under new ids.\n *\n * @param {!Element} el The button; its data-id is the source set id.\n * @return {!Promise<void>}\n */"
+ },
+ {
+  "anchor": "ACT.delSet = async (el) => {",
+  "comment": "/**\n * Deletes the clicked set and all its questions after confirmation; past session records are kept.\n *\n * @param {!Element} el The button; its data-id is the set id.\n * @return {!Promise<void>}\n */"
+ },
+ {
+  "anchor": "async function pool(fns, n) { const out = []; let i = 0; const run = async () => { while (i < fns.length) { const k = i++; out[k] = await fns[k](); } }; await Promise.all(Array.from({ length: Math.min(n, fns.length) }, run)); return out; }",
+  "comment": "/**\n * Runs async tasks with at most n running at once, preserving result order.\n *\n * The inner run() worker repeatedly takes the next unstarted task until none remain.\n * @param {!Array<function(): !Promise<*>>} fns The task factories.\n * @param {number} n The maximum concurrency.\n * @return {!Promise<!Array<*>>} The results, indexed like fns.\n */"
+ },
+ {
+  "anchor": "function qDoc(q, order) { const d = { ...q, order }; delete d.id; delete d._id; return d; }",
+  "comment": "/**\n * Builds the stored document for a question: a copy with the given order and without id or _id.\n *\n * @param {!Object} q The question.\n * @param {number} order Its position in the set.\n * @return {!Object} The document to write.\n */"
+ },
+ {
+  "anchor": "async function writeQuestions(setId, qs, startOrder = 0) { await pool(qs.map((q, k) => () => dset(`${P.setQ(setId)}/${q.id}`, qDoc(q, startOrder + k))), 6); }",
+  "comment": "/**\n * Writes questions into a set (six at a time), each under its own id with consecutive order values.\n *\n * @param {string} setId The set id.\n * @param {!Array<!Object>} qs The questions; each needs an id.\n * @param {number=} startOrder The order of the first question (default 0).\n * @return {!Promise<void>}\n */"
+ },
+ {
+  "anchor": "VIEWS.set = () => {",
+  "comment": "/**\n * Renders the set editor view for S.edit: set details form, question list, and add/import buttons.\n *\n * @return {string} HTML for the view, or a loading state while S.edit is null.\n */"
+ },
+ {
+  "anchor": "function qCard(q, i, n) {",
+  "comment": "/**\n * Renders one question card in the set editor with move, edit, and delete buttons and its options (correct marked).\n *\n * @param {!Object} q The question.\n * @param {number} i Its index in the set.\n * @param {number} n The number of questions in the set.\n * @return {string} HTML for the card.\n */"
+ },
+ {
+  "anchor": "ACT.tabBank = () => { S.bankTarget = S.edit && S.edit.id; go(\"home\", { tab: \"bank\" }); loadBank(); };",
+  "comment": "/**\n * Opens the built-in bank tab with the set being edited as the target for \"Add to set\".\n *\n * The target id is kept in S.bankTarget.\n */"
+ },
+ {
+  "anchor": "ACT.saveMeta = async () => {",
+  "comment": "/**\n * Saves the set details form (name, course, week, topic, description) to the set being edited.\n *\n * @return {!Promise<void>}\n */"
+ },
+ {
+  "anchor": "ACT.moveQ = async (el) => {",
+  "comment": "/**\n * Swaps a question with its neighbour in the editor, then persists both new order values and touches the set.\n *\n * @param {!Element} el The button; data-i is the index and data-d is -1 (up) or 1 (down).\n * @return {!Promise<void>}\n */"
+ },
+ {
+  "anchor": "ACT.delQ = async (el) => {",
+  "comment": "/**\n * Deletes a question from the set being edited after confirmation and updates the set count.\n *\n * @param {!Element} el The button; data-i is the question index.\n * @return {!Promise<void>}\n */"
+ },
+ {
+  "anchor": "ACT.addQ = () => { S.qdraft = normQ({ options: [\"\", \"\", \"\", \"\"], correct: -1 }, S.edit.qs.length); S.qdraftIndex = -1; openDialog(qEditor); };",
+  "comment": "/**\n * Opens the question editor dialog with a new blank draft (four empty options, no correct answer).\n */"
+ },
+ {
+  "anchor": "ACT.editQ = (el) => { const i = Number(el.dataset.i); S.qdraft = clone(S.edit.qs[i]); S.qdraftIndex = i; openDialog(qEditor); };",
+  "comment": "/**\n * Opens the question editor dialog with a copy of an existing question as the draft.\n *\n * @param {!Element} el The button; data-i is the question index.\n */"
+ },
+ {
+  "anchor": "function qEditor() {",
+  "comment": "/**\n * Renders the question editor dialog for the draft in S.qdraft.\n *\n * Covers prompt and image, four options with feedback, explanation, references, and metadata; upload controls\n * appear only when C.assets is available.\n * @return {string} HTML for the dialog.\n */"
+ },
+ {
+  "anchor": "function readQForm() {",
+  "comment": "/**\n * Copies the question editor's form fields into the draft S.qdraft.\n *\n * Called before any re-render so typed edits survive.\n * @return {!Object} The updated draft.\n */"
+ },
+ {
+  "anchor": "ACT.saveQ = async () => {",
+  "comment": "/**\n * Validates and saves the draft question, appending it (with the next order) or replacing the edited one.\n *\n * Shows the validation errors as a toast instead when the question is invalid.\n * @return {!Promise<void>}\n */"
+ },
+ {
+  "anchor": "ACT.qImgDel = () => { readQForm(); S.qdraft.img = \"\"; rerender(); };",
+  "comment": "/**\n * Removes the prompt image from the draft question.\n */"
+ },
+ {
+  "anchor": "ACT.refDel = (el) => { readQForm(); S.qdraft.refs.splice(Number(el.dataset.k), 1); rerender(); };",
+  "comment": "/**\n * Removes a reference from the draft question.\n *\n * @param {!Element} el The button; data-k is the reference index.\n */"
+ },
+ {
+  "anchor": "ACT.refText = async () => { readQForm(); const v = await askText(\"Add a note\", [{ id: \"text\", label: \"Note text\", multiline: true }], \"Add note\", (x) => String(x.text || \"\").trim() ? null : \"Write the note first.\"); if (!v) return; S.qdraft.refs.push({ kind: \"text\", title: \"Note\", text: v.text.trim() }); rerender(); };",
+  "comment": "/**\n * Asks for a note and adds it to the draft question as a text reference.\n *\n * @return {!Promise<void>}\n */"
+ },
+ {
+  "anchor": "ACT.refUrl = async () => { readQForm(); const v = await askText(\"Add a link\", [{ id: \"url\", label: \"Link URL\", type: \"url\", placeholder: \"https://…\" }, { id: \"title\", label: \"Link title (optional)\" }], \"Add link\", (x) => /^https?:\\/\\//i.test(String(x.url || \"\").trim()) ? null : \"Links must start with http:// or https://\"); if (!v) return; const u = v.url.trim(); S.qdraft.refs.push({ kind: \"url\", url: u, title: String(v.title || \"\").trim() || u }); rerender(); };",
+  "comment": "/**\n * Asks for an http(s) link and optional title and adds it to the draft question as a url reference.\n *\n * @return {!Promise<void>}\n */"
+ },
+ {
+  "anchor": "ACT.importQ = () => { S.importTarget = S.edit.id; S.importText = \"\"; S.importReport = null; openDialog(importDialog); };",
+  "comment": "/**\n * Opens the JSON import dialog targeting the set being edited.\n */"
+ },
+ {
+  "anchor": "ACT.importNewSet = () => { S.importTarget = null; S.importText = \"\"; S.importReport = null; openDialog(importDialog); };",
+  "comment": "/**\n * Opens the JSON import dialog to create a new set.\n */"
+ },
+ {
+  "anchor": "function importDialog() {",
+  "comment": "/**\n * Renders the JSON import dialog: text box, file chooser, Check and Import buttons, and the last check report.\n *\n * @return {string} HTML for the dialog.\n */"
+ },
+ {
+  "anchor": "function jsonFile(f) { f.text().then((t) => { S.importText = t; ACT.impCheck(true); }); }",
+  "comment": "/**\n * Reads a chosen JSON file into S.importText and checks it.\n *\n * @param {!File} f The file.\n */"
+ },
+ {
+  "anchor": "ACT.impCheck = (fromFile) => {",
+  "comment": "/**\n * Parses S.importText (an array, or an object with a questions array) and validates each question.\n *\n * Stores {ok, bad} or a fatal message in S.importReport and re-renders.\n * @param {boolean=} fromFile True when the text came from a file, so the text box is not read.\n */"
+ },
+ {
+  "anchor": "ACT.impGo = async () => {",
+  "comment": "/**\n * Imports the checked questions into the target set, creating an \"Imported set\" first when there is none.\n *\n * Appends after the current questions when the target is the set being edited, then opens that set.\n * @return {!Promise<void>}\n */"
+ },
+ {
+  "anchor": "async function loadBank() {",
+  "comment": "/**\n * Loads the built-in bank (up to 1000 questions) into S.bank sorted by order; on failure sets it empty and toasts.\n *\n * @return {!Promise<void>}\n */"
+ },
+ {
+  "anchor": "function bankFiltered() {",
+  "comment": "/**\n * Returns the bank questions matching the filters in S.bankF (topic, difficulty, subtype, chapter, text search).\n *\n * @return {!Array<!Object>} The matching questions.\n */"
+ },
+ {
+  "anchor": "function homeBank() {",
+  "comment": "/**\n * Renders the \"Built-in bank\" tab: the admin file loader, filters, selection toolbar, and the question list.\n *\n * Shows S.bankShow questions at a time (default 60).\n * @return {string} HTML for the tab.\n */"
+ },
+ {
+  "anchor": "  const uniq = (k) => [...new Set(S.bank.map((q) => q[k]).filter((x) => x !== \"\" && x != null))].sort((a, b) => (typeof a === \"number\" ? a - b : String(a).localeCompare(String(b))));",
+  "comment": "/**\n * Returns the distinct non-empty values of a bank question field, sorted.\n *\n * @param {string} k The field name.\n * @return {!Array<*>} The values.\n */"
+ },
+ {
+  "anchor": "  const opt = (k, v, lab) => `<option value=\"${esc(v)}\" ${String(f[k] || \"\") === String(v) ? \"selected\" : \"\"}>${esc(lab)}</option>`;",
+  "comment": "/**\n * Renders one filter option, selected when it equals the current filter value.\n *\n * @param {string} k The filter key in S.bankF.\n * @param {*} v The option value.\n * @param {string} lab The option label.\n * @return {string} HTML for the option.\n */"
+ },
+ {
+  "anchor": "ACT.bankAll = () => { bankFiltered().forEach((q) => S.bankSel.add(q.id)); rerender(); };",
+  "comment": "/**\n * Selects every bank question that matches the current filters.\n */"
+ },
+ {
+  "anchor": "ACT.bankNone = () => { S.bankSel.clear(); rerender(); };",
+  "comment": "/**\n * Clears the bank selection.\n */"
+ },
+ {
+  "anchor": "ACT.bankMore = () => { S.bankShow = (S.bankShow || 60) + 60; rerender(); };",
+  "comment": "/**\n * Shows 60 more bank questions.\n */"
+ },
+ {
+  "anchor": "function selectedBankQs() { const order = new Map(S.bank.map((q, i) => [q.id, i])); return [...S.bankSel].filter((id) => order.has(id)).sort((a, b) => order.get(a) - order.get(b)).map((id) => { const q = clone(S.bank[order.get(id)]); q.source = q.source || \"built-in\"; q.bankId = id; q.id = \"q\" + rid(9); return q; }); }",
+  "comment": "/**\n * Returns copies of the selected bank questions in bank order, each with a new id, its bankId, and a source.\n *\n * @return {!Array<!Object>} The questions, ready to write into a set.\n */"
+ },
+ {
+  "anchor": "async function bankMakeSet(title) {",
+  "comment": "/**\n * Creates a new set from the selected bank questions.\n *\n * @param {string} title The set title.\n * @return {!Promise<string>} The new set id.\n */"
+ },
+ {
+  "anchor": "ACT.bankToSet = async () => { const id = await bankMakeSet(\"Built-in bank selection, \" + new Date().toLocaleDateString()); S.bankSel.clear(); go(\"set\", { id }); await openSetEditor(id); };",
+  "comment": "/**\n * Makes a new set from the bank selection and opens it in the editor.\n *\n * @return {!Promise<void>}\n */"
+ },
+ {
+  "anchor": "ACT.bankHost = async () => { const id = await bankMakeSet(\"Live: bank selection, \" + new Date().toLocaleDateString()); S.bankSel.clear(); await ACT.launch({ dataset: { id } }); };",
+  "comment": "/**\n * Makes a new set from the bank selection and immediately launches it as a live game.\n *\n * @return {!Promise<void>}\n */"
+ },
+ {
+  "anchor": "ACT.bankAddTo = async () => { const id = S.bankTarget; const set = await loadSet(id); const qs = selectedBankQs(); await writeQuestions(id, qs, set.qs.length); await touchSet(id, set.qs.length + qs.length); S.bankSel.clear(); S.bankTarget = null; toast(`Added ${qs.length} questions.`); go(\"set\", { id }); await openSetEditor(id); };",
+  "comment": "/**\n * Appends the selected bank questions to the target set (S.bankTarget) and opens that set.\n *\n * @return {!Promise<void>}\n */"
+ },
+ {
+  "anchor": "async function bankFile(f) {",
+  "comment": "/**\n * Parses a file chosen to load the built-in bank and stores a preview in S.bankPreview.\n *\n * Accepts a JSON array (or {questions}) or an HTML file whose QUESTION_BANK array literal is read with\n * parseJsLiteral. Valid questions get ids b0001, b0002, and so on.\n * @param {!File} f The file.\n * @return {!Promise<void>}\n */"
+ },
+ {
+  "anchor": "ACT.bankCancel = () => { S.bankPreview = null; rerender(); };",
+  "comment": "/**\n * Discards the bank file preview.\n */"
+ },
+ {
+  "anchor": "ACT.bankWrite = async () => {",
+  "comment": "/**\n * Writes the previewed questions as the built-in bank, deletes old bank questions not in it, and updates meta/bank.\n *\n * @return {!Promise<void>}\n */"
+ },
+ {
+  "anchor": "async function joinNamed(code, asHost) {",
+  "comment": "/**\n * Joins the realtime room channel for a game code, replacing any channel already joined.\n *\n * The host answers clock \"ping\" messages with its time; a player records \"pong\" samples to estimate CLOCK.offset\n * and rtt, re-reads the room on \"nudge\", and logs a reconnect event after the connection returns.\n * @param {string} code The room code.\n * @param {boolean} asHost Whether this device is the host.\n * @return {!Promise<?Object>} The channel (also stored in NAMED), or null when unavailable.\n */"
+ },
+ {
+  "anchor": "async function leaveNamed() { NAMED_UNSUBS.forEach((u) => { try { u(); } catch {} }); NAMED_UNSUBS = []; if (NAMED) { try { await NAMED.leave(); } catch {} } NAMED = null; }",
+  "comment": "/**\n * Unsubscribes all channel listeners and leaves the realtime channel, ignoring errors.\n *\n * @return {!Promise<void>}\n */"
+ },
+ {
+  "anchor": "async function syncClock(n = 5) {",
+  "comment": "/**\n * Sends n clock ping messages about 180 to 340 ms apart; replies are handled by the pong listener in joinNamed.\n *\n * @param {number=} n The number of pings (default 5).\n * @return {!Promise<void>}\n */"
+ },
+ {
+  "anchor": "const hostNowEst = () => (DB && DB.serverNow ? DB.serverNow() : now());",
+  "comment": "/**\n * Returns the estimated server time, falling back to the local clock.\n *\n * @return {number} Milliseconds since the epoch.\n */"
+ },
+ {
+  "anchor": "const openOf = (r) => (!r ? null : r.openNowSrv != null ? r.openNowSrv : r.shownSrv != null ? r.shownSrv + (r.readS || 0) * 1000 : r.openAt != null ? r.openAt : r.shownAt);",
+  "comment": "/**\n * Returns when a room's current question opens for answering, in server milliseconds.\n *\n * Prefers openNowSrv, then shownSrv plus the reading time, then the older openAt or shownAt fields.\n * @param {?Object} r The room document.\n * @return {?number} The open time, or null when r is missing.\n */"
+ },
+ {
+  "anchor": "const deadlineOf = (r) => openOf(r) + ((r && r.q && r.q.T) || 0) * 1000;",
+  "comment": "/**\n * Returns the answer deadline of a room's current question: its open time plus the time limit.\n *\n * @param {?Object} r The room document.\n * @return {number} The deadline in server milliseconds.\n */"
+ },
+ {
+  "anchor": "function pOpenLocal(r) { return openOf(r) - (DB && DB.serverOffset ? DB.serverOffset() : 0); }",
+  "comment": "/**\n * Converts a room's open time from server time to this device's local clock.\n *\n * @param {?Object} r The room document.\n * @return {number} The open time in local milliseconds.\n */"
+ },
+ {
+  "anchor": "const ansOf = (uid) => (S.host && S.host.ans && S.host.ans[uid]) || {};",
+  "comment": "/**\n * Returns the host's record of a participant's answers.\n *\n * @param {string} uid The participant id.\n * @return {!Object} The answers, or an empty object.\n */"
+ },
+ {
+  "anchor": "function nudge() { if (NAMED) NAMED.emit(\"nudge\", { at: now() }).catch(() => {}); }",
+  "comment": "/**\n * Broadcasts a \"nudge\" so players re-read the room document immediately.\n */"
+ },
+ {
+  "anchor": "function startTicker(fn) { stopTicker(); TICK = setInterval(fn, 200); }",
+  "comment": "/**\n * Starts the shared 200 ms interval timer, stopping any previous one.\n *\n * @param {function()} fn The function to run each tick.\n */"
+ },
+ {
+  "anchor": "function stopTicker() { clearInterval(TICK); TICK = null; }",
+  "comment": "/**\n * Stops the shared interval timer.\n */"
+ },
+ {
+  "anchor": "function leaveLive(keepState) {",
+  "comment": "/**\n * Leaves live mode: stops the timer and audio loop, leaves the channel, and unsubscribes host and player listeners.\n *\n * @param {boolean=} keepState When true, S.host and S.play are kept; otherwise they are cleared.\n */"
+ },
+ {
+  "anchor": "function ringHtml(T, cls = \"\") { const C2 = 2 * Math.PI * 50; return `<div class=\"ring ${cls}\" id=\"ring\" aria-live=\"off\"><svg viewBox=\"0 0 120 120\"><circle class=\"track\" cx=\"60\" cy=\"60\" r=\"50\"/><circle class=\"bar\" id=\"ringbar\" cx=\"60\" cy=\"60\" r=\"50\" stroke-dasharray=\"${C2}\" stroke-dashoffset=\"0\"/></svg><div class=\"num\" id=\"ringnum\">${T}</div></div>`; }",
+  "comment": "/**\n * Returns the countdown ring markup at full length.\n *\n * @param {number} T The number shown in the middle (the time limit in seconds).\n * @param {string=} cls Extra CSS classes.\n * @return {string} HTML for the ring.\n */"
+ },
+ {
+  "anchor": "function updateRing(remainMs, T, quiet) {",
+  "comment": "/**\n * Updates the countdown ring's number and arc, ticking audibly and marking \"hurry\" in the last five seconds.\n *\n * @param {number} remainMs The time left in milliseconds.\n * @param {number} T The time limit in seconds.\n * @param {boolean} quiet When true, no tick sound or hurry style.\n */"
+ },
+ {
+  "anchor": "function answerCards(opts, o = {}) {",
+  "comment": "/**\n * Renders the four answer buttons with optional correct/dim/mine marks, counts, and click handling.\n *\n * @param {!Array<string>} opts The option texts.\n * @param {{locked: (boolean|undefined), correct: (?number|undefined), mine: (?number|undefined),\n *     interactive: (boolean|undefined), counts: (!Array<number>|undefined)}=} o Display options.\n * @return {string} HTML for the answers.\n */"
+ },
+ {
+  "anchor": "function distBars(dist, correct) {",
+  "comment": "/**\n * Renders the answer distribution bar chart with the correct option highlighted.\n *\n * @param {!Array<number>} dist The answer count per option.\n * @param {?number} correct The correct option index.\n * @return {string} HTML for the chart.\n */"
+ },
+ {
+  "anchor": "function refsHtml(refs, q, phase = \"live\", sid = \"\") {",
+  "comment": "/**\n * Renders a question's reference materials: notes and images inline, videos as players, others as links.\n *\n * Links and videos carry data attributes so opening them is logged by logRef.\n * @param {?Array<!Object>} refs The references.\n * @param {number} q The question index.\n * @param {string=} phase The logging phase (default \"live\").\n * @param {string=} sid The session id (default \"\").\n * @return {string} HTML, or \"\" when there are no references.\n */"
+ },
+ {
+  "anchor": "ACT.openRef = (el) => { logRef(Number(el.dataset.q), Number(el.dataset.k), \"\", el.dataset.phase, el.dataset.sid); window.open(el.getAttribute(\"href\"), \"_blank\", \"noopener\"); };",
+  "comment": "/**\n * Logs a reference link open and opens it in a new tab.\n *\n * @param {!Element} el The link; its data attributes give question, index, phase, and session.\n */"
+ }
+]

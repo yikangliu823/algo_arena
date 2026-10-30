@@ -1,0 +1,106 @@
+rules_version = '2';
+
+// AlgoArena route B (GitHub Pages + Firebase), draft 0.1: Cloud Firestore security rules.
+//
+// Author: Yikang (Richard) Liu, M.S. Candidate in Computer Science, Khoury College of Computer Sciences,
+//     Northeastern University
+// Version: 1.0
+// Created: October 29, 2026 · San Francisco, California, USA
+//
+// License: This project is licensed under the MIT License — see LICENSE.md for details.
+// Copyright © 2026 Yikang (Richard) Liu.
+//
+// Security model:
+//  - Each signed-in user owns data/users/{uid}/** (sets, sessions, logs, keys, reviews). Nobody else can read it.
+//  - Rooms are public to signed-in users (they hold no correct answers before reveal); only the host writes them.
+//  - Answers are separate create-only documents. The rules check that the timestamp is the server's own time,
+//    that the room is open for answers at that server time, and that the answer is for the current question.
+//    This makes response times server-authoritative without a Cloud Function.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Returns true when the request carries a Firebase Auth identity.
+    function signedIn() { return request.auth != null; }
+    // Returns true when the signed-in caller is listed in meta/admins.uids (false if that document is missing).
+    function isAdmin() {
+      return signedIn()
+        && exists(/databases/$(database)/documents/meta/admins)
+        && request.auth.uid in get(/databases/$(database)/documents/meta/admins).data.uids;
+    }
+    // Returns the data of the host's room document rooms/{hostId} (one billed document read).
+    //   hostId: uid of the room's host.
+    function roomOf(hostId) { return get(/databases/$(database)/documents/rooms/$(hostId)).data; }
+    // Returns a duration of n milliseconds, for arithmetic on timestamps.
+    //   n: a number of milliseconds (converted with int()).
+    function msDur(n) { return duration.value(int(n), 'ms'); }
+    // Returns true when request.time lies in the room's answer window.
+    //   r: room data (shownSrv, readS, q.T, optional openNowSrv).
+    // Answers are accepted from the moment answers open until T seconds later plus a 250 ms grace.
+    // Answers open at shownSrv + readS seconds, or at openNowSrv if the host opened them early.
+    function inAnswerWindow(r) {
+      return (r.get('openNowSrv', null) != null
+               && request.time >= r.openNowSrv
+               && request.time <= r.openNowSrv + msDur(int(r.q.T) * 1000 + 250))
+          || (r.get('openNowSrv', null) == null
+               && request.time >= r.shownSrv + msDur(int(r.readS) * 1000)
+               && request.time <= r.shownSrv + msDur(int(r.readS) * 1000 + int(r.q.T) * 1000 + 250));
+    }
+    // Returns true when the new answer document is valid: the room is taking answers for this question, the fields
+    // are the allowed ones, the author and document id match the caller, the timestamp is the server's own time,
+    // and the write is inside the answer window (invariant I1).
+    //   hostId: uid of the room's host.
+    //   aid: the answer document id, expected to be <uid>_<sid>_<qIndex>.
+    function validAnswer(hostId, aid) {
+      let r = roomOf(hostId);
+      let d = request.resource.data;
+      return r.status == 'question'
+        && d.keys().hasOnly(['uid', 'sid', 'q', 'ct', 'srv', 'mono', 'localAt', 'offset', 'rtt', 'dev'])
+        && d.keys().hasAll(['uid', 'sid', 'q', 'ct', 'srv'])
+        && d.uid == request.auth.uid
+        && d.sid == r.sid
+        && d.q == r.qIndex
+        && d.ct is string && d.ct.size() < 4096
+        && aid == request.auth.uid + '_' + r.sid + '_' + string(r.qIndex)
+        && d.srv == request.time
+        && inAnswerWindow(r);
+    }
+
+    match /data/users/{uid}/{document=**} {
+      allow read, write: if signedIn() && request.auth.uid == uid;
+    }
+
+    match /bank/{id} {
+      allow read: if signedIn();
+      allow write: if isAdmin();
+    }
+    match /meta/{id} {
+      allow read: if signedIn();
+      allow write: if isAdmin();
+    }
+
+    match /rooms/{hostId} {
+      allow read: if signedIn();
+      allow write: if signedIn() && request.auth.uid == hostId;
+
+      // Sealed AI-report deliveries; document id is <sid>_<recipient uid>.
+      match /r/{rid} {
+        allow read: if signedIn() && (request.auth.uid == hostId || rid.matches('^.*_' + request.auth.uid + '$'));
+        allow write: if signedIn() && request.auth.uid == hostId;
+      }
+
+      // One document per participant per question; id is <uid>_<sid>_<qIndex>.
+      match /answers/{aid} {
+        allow read: if signedIn() && (request.auth.uid == hostId || aid.matches('^' + request.auth.uid + '_.*'));
+        allow create: if signedIn() && validAnswer(hostId, aid);
+        allow update, delete: if false;
+      }
+    }
+
+    // A participant's public record for the game they are in (name, public key, events, report hand-off).
+    // Readable by the participant and by the host they joined; queries by the host must filter on host == uid.
+    match /pub/{uid} {
+      allow read: if signedIn() && (request.auth.uid == uid || resource.data.host == request.auth.uid);
+      allow write: if signedIn() && request.auth.uid == uid;
+    }
+  }
+}

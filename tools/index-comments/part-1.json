@@ -1,0 +1,430 @@
+[
+ {
+  "anchor": "const $ = (s, r = document) => r.querySelector(s);",
+  "comment": "/**\n * Returns the first element matching a CSS selector.\n *\n * @param {string} s CSS selector.\n * @param {!ParentNode=} r Root to search; defaults to document.\n * @return {?Element} The first match, or null.\n */"
+ },
+ {
+  "anchor": "const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));",
+  "comment": "/**\n * Returns every element matching a CSS selector as a real array.\n *\n * @param {string} s CSS selector.\n * @param {!ParentNode=} r Root to search; defaults to document.\n * @return {!Array<!Element>} All matches in document order.\n */"
+ },
+ {
+  "anchor": "const esc = (s) => String(s ?? \"\").replace(/[&<>\"']/g, (c) => ({ \"&\": \"&amp;\", \"<\": \"&lt;\", \">\": \"&gt;\", '\"': \"&quot;\", \"'\": \"&#39;\" }[c]));",
+  "comment": "/**\n * Escapes a value for safe insertion into HTML text or attributes.\n *\n * Replaces & < > \" and ' with entities; null and undefined become an empty string.\n *\n * @param {*} s Value to escape (stringified).\n * @return {string} The HTML-escaped string.\n */"
+ },
+ {
+  "anchor": "const now = () => Date.now();",
+  "comment": "/**\n * Returns the current time.\n *\n * @return {number} Milliseconds since the Unix epoch.\n */"
+ },
+ {
+  "anchor": "const sleep = (ms) => new Promise((r) => setTimeout(r, ms));",
+  "comment": "/**\n * Waits for the given number of milliseconds.\n *\n * @param {number} ms Delay in milliseconds.\n * @return {!Promise<void>} Resolves after the delay.\n */"
+ },
+ {
+  "anchor": "const clamp = (x, a, b) => Math.max(a, Math.min(b, x));",
+  "comment": "/**\n * Clamps a number to an inclusive range.\n *\n * @param {number} x Value to clamp.\n * @param {number} a Lower bound.\n * @param {number} b Upper bound.\n * @return {number} x limited to [a, b].\n */"
+ },
+ {
+  "anchor": "function rid(n = 12) {",
+  "comment": "/**\n * Returns a random lowercase identifier from crypto.getRandomValues.\n *\n * The alphabet omits easily confused characters (l, 0, 1).\n *\n * @param {number=} n Length; defaults to 12.\n * @return {string} The random identifier.\n */"
+ },
+ {
+  "anchor": "function roomCode() {",
+  "comment": "/**\n * Returns a random six-character uppercase room code.\n *\n * The alphabet omits I, O, 0 and 1 so codes are easy to read aloud.\n *\n * @return {string} The room code.\n */"
+ },
+ {
+  "anchor": "const median = (xs) => { if (!xs.length) return null; const s = [...xs].sort((a, b) => a - b); const m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };",
+  "comment": "/**\n * Returns the median of a list of numbers.\n *\n * @param {!Array<number>} xs Values; not modified.\n * @return {?number} The median (mean of the two middle values for even length), or null when empty.\n */"
+ },
+ {
+  "anchor": "const mean = (xs) => xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null;",
+  "comment": "/**\n * Returns the arithmetic mean of a list of numbers.\n *\n * @param {!Array<number>} xs Values.\n * @return {?number} The mean, or null when empty.\n */"
+ },
+ {
+  "anchor": "const fmtS = (ms) => ms == null ? \"–\" : (ms / 1000).toFixed(1) + \" s\";",
+  "comment": "/**\n * Formats a duration in milliseconds as seconds with one decimal.\n *\n * @param {?number} ms Duration in milliseconds.\n * @return {string} For example \"2.3 s\", or an en dash when null.\n */"
+ },
+ {
+  "anchor": "const pct = (a, b) => b ? Math.round((100 * a) / b) + \"%\" : \"–\";",
+  "comment": "/**\n * Formats a ratio as a rounded percentage.\n *\n * @param {number} a Numerator.\n * @param {number} b Denominator.\n * @return {string} For example \"75%\", or an en dash when b is zero.\n */"
+ },
+ {
+  "anchor": "const fmtDate = (t) => t ? new Date(t).toLocaleString([], { dateStyle: \"medium\", timeStyle: \"short\" }) : \"–\";",
+  "comment": "/**\n * Formats a timestamp as a medium date with a short time in the user's locale.\n *\n * @param {?number} t Milliseconds since the epoch.\n * @return {string} The formatted date, or an en dash when falsy.\n */"
+ },
+ {
+  "anchor": "function words(md) { return md.replace(/\\[([^\\]]*)\\]\\([^)]*\\)/g, \"$1\").replace(/[#*_>`|-]/g, \" \").split(/\\s+/).filter((w) => /[A-Za-z0-9]/.test(w)).length; }",
+  "comment": "/**\n * Counts the words in a Markdown string.\n *\n * Link syntax is reduced to its label and Markdown punctuation is removed; a word must contain a letter or digit.\n *\n * @param {string} md Markdown text.\n * @return {number} The word count.\n */"
+ },
+ {
+  "anchor": "async function sha256hex(s) { const d = await crypto.subtle.digest(\"SHA-256\", new TextEncoder().encode(s)); return Array.from(new Uint8Array(d)).map((b) => b.toString(16).padStart(2, \"0\")).join(\"\"); }",
+  "comment": "/**\n * Computes the SHA-256 digest of a string.\n *\n * @param {string} s Input, encoded as UTF-8.\n * @return {!Promise<string>} The lowercase hex digest.\n */"
+ },
+ {
+  "anchor": "function lsGet(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : v; } catch { return d; } }",
+  "comment": "/**\n * Reads a localStorage value, tolerating blocked storage.\n *\n * @param {string} k Key.\n * @param {?string} d Default when the key is missing or storage throws.\n * @return {?string} The stored value or the default.\n */"
+ },
+ {
+  "anchor": "function lsSet(k, v) { try { localStorage.setItem(k, v); } catch {} }",
+  "comment": "/**\n * Writes a localStorage value, silently ignoring storage errors.\n *\n * @param {string} k Key.\n * @param {string} v Value.\n */"
+ },
+ {
+  "anchor": "function b64(buf) { const u = new Uint8Array(buf); let s = \"\"; for (let i = 0; i < u.length; i += 0x8000) s += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000)); return btoa(s); }",
+  "comment": "/**\n * Encodes binary data as base64.\n *\n * Converts in 32 KiB chunks so large buffers do not overflow String.fromCharCode arguments.\n *\n * @param {!ArrayBuffer|!Uint8Array} buf Bytes to encode.\n * @return {string} The base64 string.\n */"
+ },
+ {
+  "anchor": "function unb64(s) { const b = atob(s); const u = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); return u; }",
+  "comment": "/**\n * Decodes a base64 string into bytes.\n *\n * @param {string} s Base64 string.\n * @return {!Uint8Array} The decoded bytes.\n */"
+ },
+ {
+  "anchor": "async function genKeyPair() {",
+  "comment": "/**\n * Generates a 2048-bit RSA-OAEP (SHA-256) key pair for sealing answers.\n *\n * @return {!Promise<{pub: !Object, priv: !Object}>} The public and private keys as JWK objects.\n */"
+ },
+ {
+  "anchor": "async function importKey(jwk, use) {",
+  "comment": "/**\n * Imports an RSA-OAEP JWK as a CryptoKey for one operation, memoized in keyCache.\n *\n * The cache key is the use plus the first 40 characters of the modulus.\n *\n * @param {!Object} jwk RSA key in JWK form.\n * @param {string} use Either \"encrypt\" or \"decrypt\".\n * @return {!Promise<!CryptoKey>} The non-extractable imported key.\n */"
+ },
+ {
+  "anchor": "async function seal(pubJwk, obj) {",
+  "comment": "/**\n * Encrypts an object for the holder of an RSA private key (hybrid encryption).\n *\n * The JSON is encrypted with a fresh AES-256-GCM key and random 12-byte IV; the AES key is wrapped with RSA-OAEP.\n *\n * @param {!Object} pubJwk Recipient public key as JWK.\n * @param {*} obj JSON-serializable value to seal.\n * @return {!Promise<{k: string, iv: string, c: string}>} Base64 wrapped key, IV and ciphertext.\n */"
+ },
+ {
+  "anchor": "async function unseal(privJwk, s) {",
+  "comment": "/**\n * Decrypts a sealed payload produced by seal().\n *\n * @param {!Object} privJwk Private key as JWK.\n * @param {{k: string, iv: string, c: string}|string} s Sealed payload, or its JSON string (route B stores sealed answers as strings).\n * @return {!Promise<*>} The original parsed JSON value.\n */"
+ },
+ {
+  "anchor": "function crc32(u) { let c = 0xffffffff; for (let i = 0; i < u.length; i++) c = CRC[(c ^ u[i]) & 0xff] ^ (c >>> 8); return (c ^ 0xffffffff) >>> 0; }",
+  "comment": "/**\n * Computes the CRC-32 checksum used by ZIP entries, via the precomputed CRC table.\n *\n * @param {!Uint8Array} u Bytes to checksum.\n * @return {number} The unsigned 32-bit CRC.\n */"
+ },
+ {
+  "anchor": "function makeZip(files) {",
+  "comment": "/**\n * Builds an uncompressed (stored) ZIP archive in memory.\n *\n * Writes a local header per file, a central directory and an end record; names are flagged UTF-8.\n *\n * @param {!Array<{name: string, data: (string|!Uint8Array)}>} files Entries; string data is UTF-8 encoded.\n * @return {!Blob} The archive with type application/zip.\n */"
+ },
+ {
+  "anchor": "function csv(rows, cols) {",
+  "comment": "/**\n * Serializes rows to CSV with a header line and CRLF line endings.\n *\n * @param {!Array<!Object>} rows Records to write.\n * @param {!Array<string>} cols Column keys, in output order.\n * @return {string} The CSV text, ending in CRLF.\n */"
+ },
+ {
+  "anchor": "  const q = (v) => { if (v == null) return \"\"; const s = typeof v === \"object\" ? JSON.stringify(v) : String(v); return /[\",\\n\\r]/.test(s) ? '\"' + s.replace(/\"/g, '\"\"') + '\"' : s; };",
+  "comment": "/**\n * Quotes one CSV cell value.\n *\n * Null becomes empty; objects are JSON-encoded; values containing quotes, commas or newlines are quoted with doubled quotes.\n *\n * @param {*} v Cell value.\n * @return {string} The CSV-safe cell text.\n */"
+ },
+ {
+  "anchor": "const safeName = (s) => String(s || \"file\").replace(/[^\\w\\- .()]+/g, \"_\").slice(0, 80);",
+  "comment": "/**\n * Makes a string safe to use as a download file name.\n *\n * @param {*} s Proposed name; falsy becomes \"file\".\n * @return {string} The name with unsafe character runs replaced by underscores, at most 80 characters.\n */"
+ },
+ {
+  "anchor": "function mdInline(s) {",
+  "comment": "/**\n * Renders inline Markdown (bold, italics, http(s) links) as HTML after escaping the text.\n *\n * @param {string} s Markdown text for one line.\n * @return {string} HTML; links open in a new tab with rel noopener.\n */"
+ },
+ {
+  "anchor": "function mdToHtml(md) {",
+  "comment": "/**\n * Renders a small Markdown subset to HTML: h1 to h3 headings, - or * bullet lists and paragraphs.\n *\n * @param {?string} md Markdown text.\n * @return {string} The HTML string; blank lines are dropped.\n */"
+ },
+ {
+  "anchor": "function parseJsLiteral(src, i0) {",
+  "comment": "/**\n * Parses a JavaScript object or array literal from source text without eval.\n *\n * Supports comments, quoted and bare keys, strings with escapes, numbers, true/false/null/undefined and string\n * concatenation with +; used to read QUESTION_BANK from an original index.html.\n *\n * @param {string} src Source text.\n * @param {number} i0 Index where the literal starts.\n * @return {*} The parsed value.\n * @throws {Error} On syntax it does not support, including template expressions.\n */"
+ },
+ {
+  "anchor": "  const ws = () => { for (;;) { while (i < src.length && /\\s/.test(src[i])) i++; if (src.startsWith(\"//\", i)) { while (i < src.length && src[i] !== \"\\n\") i++; } else if (src.startsWith(\"/*\", i)) { const j = src.indexOf(\"*/\", i + 2); i = j < 0 ? src.length : j + 2; } else break; } };",
+  "comment": "/**\n * Advances the parser index past whitespace and line or block comments.\n */"
+ },
+ {
+  "anchor": "  const str = () => {",
+  "comment": "/**\n * Reads a quoted string literal at the current index, decoding escape sequences.\n *\n * @return {string} The decoded string.\n * @throws {Error} When a template literal contains an expression.\n */"
+ },
+ {
+  "anchor": "  const val = () => {",
+  "comment": "/**\n * Reads one value (array, object, string, number or keyword) at the current index.\n *\n * @return {*} The parsed value.\n * @throws {Error} On a bad key, missing colon or unexpected token.\n */"
+ },
+ {
+  "anchor": "  const expr = () => { let v = val(); for (;;) { ws(); if (src[i] === \"+\") { i++; v = String(v) + String(val()); } else return v; } };",
+  "comment": "/**\n * Reads a value followed by any + concatenations, joining them as strings.\n *\n * @return {*} The value, or the concatenated string.\n */"
+ },
+ {
+  "anchor": "function normQ(raw, idx) {",
+  "comment": "/**\n * Normalizes a raw question record from any supported schema into the app's question model.\n *\n * Accepts alternative field names (choices, answer, correctIndex, feedback, references, and so on), converts a\n * letter or digit answer to an index, and assigns a random id when none is given.\n *\n * @param {?Object} raw Imported question record.\n * @param {number=} idx Position, stored as order (default 0).\n * @return {!Object} The normalized question; correct is -1 when it cannot be resolved.\n */"
+ },
+ {
+  "anchor": "function validateQ(q) {",
+  "comment": "/**\n * Checks a normalized question for problems that block saving or playing it.\n *\n * @param {!Object} q Question from normQ().\n * @return {!Array<string>} Human-readable problems; empty when the question is valid.\n */"
+ },
+ {
+  "anchor": "  ensure() { if (!this.ctx) { try { this.ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch { this.ctx = null; } } if (this.ctx && this.ctx.state === \"suspended\") this.ctx.resume(); return this.ctx; },",
+  "comment": "/**\n * Returns the shared AudioContext, creating it on first use and resuming it if suspended.\n *\n * @return {?AudioContext} The context, or null when WebAudio is unavailable.\n */"
+ },
+ {
+  "anchor": "  tone(f, d, t0 = 0, type = \"triangle\", g = 0.12) {",
+  "comment": "/**\n * Plays one synthesized tone with a short attack and exponential decay, unless muted.\n *\n * @param {number} f Frequency in Hz.\n * @param {number} d Duration in seconds.\n * @param {number=} t0 Start offset in seconds from now (default 0).\n * @param {string=} type Oscillator type (default \"triangle\").\n * @param {number=} g Peak gain (default 0.12).\n */"
+ },
+ {
+  "anchor": "  join() { this.tone(880, 0.12, 0, \"sine\", 0.08); this.tone(1320, 0.12, 0.06, \"sine\", 0.06); },",
+  "comment": "/**\n * Plays the two-note cue for a player joining.\n */"
+ },
+ {
+  "anchor": "  open() { [659, 880].forEach((f, k) => this.tone(f, 0.16, k * 0.08, \"triangle\", 0.09)); },",
+  "comment": "/**\n * Plays the cue for answers opening.\n */"
+ },
+ {
+  "anchor": "  tick(hurry) { this.tone(hurry ? 1046 : 784, 0.06, 0, \"square\", 0.04); },",
+  "comment": "/**\n * Plays one countdown tick.\n *\n * @param {boolean} hurry True for the higher-pitched tick used near the deadline.\n */"
+ },
+ {
+  "anchor": "  correct() { [523, 659, 784, 1046].forEach((f, k) => this.tone(f, 0.25, k * 0.07, \"triangle\", 0.11)); },",
+  "comment": "/**\n * Plays the rising arpeggio for a correct answer.\n */"
+ },
+ {
+  "anchor": "  wrong() { this.tone(233, 0.35, 0, \"sawtooth\", 0.06); this.tone(220, 0.4, 0.12, \"sawtooth\", 0.06); },",
+  "comment": "/**\n * Plays the low descending cue for a wrong answer.\n */"
+ },
+ {
+  "anchor": "  reveal() { [392, 494, 587].forEach((f) => this.tone(f, 0.6, 0, \"triangle\", 0.07)); this.tone(784, 0.5, 0.18, \"sine\", 0.07); },",
+  "comment": "/**\n * Plays the chord cue for revealing the correct answer.\n */"
+ },
+ {
+  "anchor": "  board() { [523, 587, 659, 784, 880].forEach((f, k) => this.tone(f, 0.18, k * 0.08, \"square\", 0.04)); },",
+  "comment": "/**\n * Plays the five-note cue for showing the leaderboard.\n */"
+ },
+ {
+  "anchor": "  streak() { [1175, 1397, 1568].forEach((f, k) => this.tone(f, 0.15, k * 0.05, \"sine\", 0.06)); },",
+  "comment": "/**\n * Plays the short cue for an answer streak.\n */"
+ },
+ {
+  "anchor": "  startLoop() {",
+  "comment": "/**\n * Starts the looping lobby music on a 280 ms interval; does nothing if it is already running.\n *\n * Notes are skipped while muted, but the interval keeps running until stopLoop().\n */"
+ },
+ {
+  "anchor": "  stopLoop() { clearInterval(this.loop); this.loop = null; },",
+  "comment": "/**\n * Stops the lobby music loop.\n */"
+ },
+ {
+  "anchor": "  setMuted(m) { this.muted = m; lsSet(\"aa.muted\", m ? \"1\" : \"0\"); },",
+  "comment": "/**\n * Sets the mute state and persists it to localStorage under aa.muted.\n *\n * @param {boolean} m True to mute.\n */"
+ },
+ {
+  "anchor": "function flipCapture() { const m = new Map(); $$(\"[data-flip]\").forEach((el) => m.set(el.dataset.flip, el.getBoundingClientRect())); return m; }",
+  "comment": "/**\n * Records the on-screen position of every [data-flip] element before a re-render.\n *\n * @return {!Map<string, !DOMRect>} Bounding rectangles keyed by data-flip value.\n */"
+ },
+ {
+  "anchor": "function flipPlay(before) {",
+  "comment": "/**\n * Animates [data-flip] elements from their previous vertical positions to their new ones (FLIP).\n *\n * Skipped when the user prefers reduced motion.\n *\n * @param {!Map<string, !DOMRect>} before Positions from flipCapture().\n */"
+ },
+ {
+  "anchor": "function countUp(el, from, to, ms = 900) {",
+  "comment": "/**\n * Animates an element's text as a number counting from one value to another with ease-out.\n *\n * Sets the final value immediately when reduced motion is preferred or the values are equal.\n *\n * @param {?Element} el Target element; nothing happens when null.\n * @param {number} from Start value.\n * @param {number} to End value.\n * @param {number=} ms Duration in milliseconds (default 900).\n */"
+ },
+ {
+  "anchor": "  const t0 = performance.now(); const step = (t) => { const p = Math.min(1, (t - t0) / ms); const e = 1 - Math.pow(1 - p, 3); el.textContent = Math.round(from + (to - from) * e).toLocaleString(); if (p < 1) requestAnimationFrame(step); };",
+  "comment": "/**\n * Renders one animation frame of countUp() and schedules the next until done.\n *\n * @param {number} t Frame timestamp from requestAnimationFrame.\n */"
+ },
+ {
+  "anchor": "function isYouTube(url) { try { const u = new URL(url); return /(^|\\.)youtube\\.com$|(^|\\.)youtu\\.be$/.test(u.hostname); } catch { return false; } }",
+  "comment": "/**\n * Reports whether a URL points to YouTube (youtube.com or youtu.be, including subdomains).\n *\n * @param {string} url URL to test.\n * @return {boolean} True for YouTube hosts; false for other or invalid URLs.\n */"
+ },
+ {
+  "anchor": "function rankResources(lib, text, k = 6) {",
+  "comment": "/**\n * Ranks library resources by how many of their tags appear as words in a text.\n *\n * @param {!Array<{tags: string}>} lib Resource library such as CURATED.\n * @param {string} text Text to match (words over 2 characters).\n * @param {number=} k Maximum results (default 6).\n * @return {!Array<!Object>} The top k resources, each copied with a score field, highest first.\n */"
+ },
+ {
+  "anchor": "  profile: () => `data/users/${S.uid}/profile`,",
+  "comment": "/**\n * Returns the Firestore path of the signed-in user's profile document.\n *\n * @return {string} The path.\n */"
+ },
+ {
+  "anchor": "  device: () => `data/users/${S.uid}/device`,",
+  "comment": "/**\n * Returns the path of the user's active-device document.\n *\n * @return {string} The path.\n */"
+ },
+ {
+  "anchor": "  sets: () => `data/users/${S.uid}/profile/sets`,",
+  "comment": "/**\n * Returns the path of the user's question-set collection.\n *\n * @return {string} The path.\n */"
+ },
+ {
+  "anchor": "  setQ: (id) => `data/users/${S.uid}/profile/sets/${id}/q`,",
+  "comment": "/**\n * Returns the path of the question collection inside one of the user's sets.\n *\n * @param {string} id Set id.\n * @return {string} The path.\n */"
+ },
+ {
+  "anchor": "  sessions: () => `data/users/${S.uid}/profile/sessions`,",
+  "comment": "/**\n * Returns the path of the user's hosted-session collection.\n *\n * @return {string} The path.\n */"
+ },
+ {
+  "anchor": "  sLog: (sid) => `data/users/${S.uid}/profile/sessions/${sid}/log`,",
+  "comment": "/**\n * Returns the path of a session's log collection.\n *\n * @param {string} sid Session id.\n * @return {string} The path.\n */"
+ },
+ {
+  "anchor": "  sContent: (sid) => `data/users/${S.uid}/profile/sessions/${sid}/content`,",
+  "comment": "/**\n * Returns the path of a session's content collection.\n *\n * @param {string} sid Session id.\n * @return {string} The path.\n */"
+ },
+ {
+  "anchor": "  sAi: (sid) => `data/users/${S.uid}/profile/sessions/${sid}/ai`,",
+  "comment": "/**\n * Returns the path of a session's AI-report collection.\n *\n * @param {string} sid Session id.\n * @return {string} The path.\n */"
+ },
+ {
+  "anchor": "  keys: () => `data/users/${S.uid}/profile/keys`,",
+  "comment": "/**\n * Returns the path of the user's keys collection.\n *\n * @return {string} The path.\n */"
+ },
+ {
+  "anchor": "  expo: () => `data/users/${S.uid}/profile/expo`,",
+  "comment": "/**\n * Returns the path of the user's expo collection.\n *\n * @return {string} The path.\n */"
+ },
+ {
+  "anchor": "  joined: () => `data/users/${S.uid}/profile/joined`,",
+  "comment": "/**\n * Returns the path of the user's joined-games collection.\n *\n * @return {string} The path.\n */"
+ },
+ {
+  "anchor": "  room: (h) => `rooms/${h}`, rep: (h) => `rooms/${h}/r`, pub: (u) => `pub/${u}`, answers: (h) => `rooms/${h}/answers`,",
+  "comment": "/**\n * Path builders for shared room data, each taking a host or user uid.\n *\n * room(h) returns rooms/<h>, the host's room document; rep(h) returns rooms/<h>/r, the sealed AI-report\n * deliveries (document id <sid>_<recipient uid>); pub(u) returns pub/<u>, the\n * user's public player document; answers(h) returns rooms/<h>/answers, the room's answer collection.\n *\n * @param {string} h Host uid (room, rep, answers); pub takes a user uid u instead.\n * @return {string} The path.\n */"
+ },
+ {
+  "anchor": "function serial(path, fn) {",
+  "comment": "/**\n * Chains a write behind any earlier write to the same path so writes per path run in order.\n *\n * Rejects with code \"displaced\" when this device is no longer the active one (S.displaced); a failure does not\n * block later writes to the path.\n *\n * @param {string} path Document path used as the queue key.\n * @param {function(): !Promise<*>} fn The write to run.\n * @return {!Promise<*>} Resolves or rejects with fn's outcome.\n */"
+ },
+ {
+  "anchor": "async function retry(fn) { try { return await fn(); } catch (e) { if (e && e.code === \"unavailable\") { await sleep(300 + Math.random() * 700); return fn(); } throw e; } }",
+  "comment": "/**\n * Runs an async operation, retrying once after a random 300 to 1000 ms delay if it fails with code \"unavailable\".\n *\n * @param {function(): !Promise<*>} fn Operation to run.\n * @return {!Promise<*>} Its result.\n * @throws {*} Any other error, or the retry's error.\n */"
+ },
+ {
+  "anchor": "async function dget(path) { const s = await retry(() => DB.doc(path).get()); return s.exists ? s.data() : null; }",
+  "comment": "/**\n * Reads one document from DB with retry.\n *\n * @param {string} path Document path.\n * @return {!Promise<?Object>} The document data, or null when it does not exist.\n */"
+ },
+ {
+  "anchor": "const dset = (path, data) => serial(path, () => retry(() => DB.doc(path).set(data)));",
+  "comment": "/**\n * Replaces a document's data, serialized per path and retried once when unavailable.\n *\n * @param {string} path Document path.\n * @param {!Object} data New data.\n * @return {!Promise<*>} Resolves when written.\n */"
+ },
+ {
+  "anchor": "const dupd = (path, data) => serial(path, () => retry(() => DB.doc(path).update(data)));",
+  "comment": "/**\n * Merges fields into an existing document, serialized per path and retried once when unavailable.\n *\n * @param {string} path Document path.\n * @param {!Object} data Fields to update.\n * @return {!Promise<*>} Resolves when written.\n */"
+ },
+ {
+  "anchor": "const ddel = (path) => serial(path, () => retry(() => DB.doc(path).delete()));",
+  "comment": "/**\n * Deletes a document, serialized per path and retried once when unavailable.\n *\n * @param {string} path Document path.\n * @return {!Promise<*>} Resolves when deleted.\n */"
+ },
+ {
+  "anchor": "async function dlist(col, build) { let q = DB.collection(col); if (build) q = build(q); const s = await retry(() => q.get()); return s.docs.map((d) => ({ _id: d.id, ...d.data() })); }",
+  "comment": "/**\n * Lists the documents of a collection, optionally refined by a query builder.\n *\n * @param {string} col Collection path.\n * @param {?function(*): *=} build Optional function that adds where/orderBy/limit to the query.\n * @return {!Promise<!Array<!Object>>} Each document's data with its id as _id.\n */"
+ },
+ {
+  "anchor": "const clone = (x) => x == null ? x : JSON.parse(JSON.stringify(x));",
+  "comment": "/**\n * Deep-copies a JSON-compatible value via JSON round-trip.\n *\n * @param {*} x Value to copy; null and undefined are returned as is.\n * @return {*} The copy.\n */"
+ },
+ {
+  "anchor": "function errMsg(e) {",
+  "comment": "/**\n * Converts an error into a user-facing message, with friendlier text for quota, refused-write and displaced errors.\n *\n * @param {*} e Error or value thrown.\n * @return {string} The message to show.\n */"
+ },
+ {
+  "anchor": "function toast(msg, ms = 3200) { S.toast = msg; renderToast(); clearTimeout(toast.t); toast.t = setTimeout(() => { S.toast = null; renderToast(); }, ms); }",
+  "comment": "/**\n * Shows a transient status message, replacing any current one.\n *\n * @param {string} msg Message text.\n * @param {number=} ms How long to show it in milliseconds (default 3200).\n */"
+ },
+ {
+  "anchor": "function renderToast() { let el = $(\"#toast\"); if (!S.toast) { el && el.remove(); return; } if (!el) { el = document.createElement(\"div\"); el.id = \"toast\"; el.className = \"toast\"; el.setAttribute(\"role\", \"status\"); document.body.appendChild(el); } el.textContent = S.toast; }",
+  "comment": "/**\n * Creates, updates or removes the #toast element to match S.toast.\n */"
+ },
+ {
+  "anchor": "async function saveFile(filename, data) {",
+  "comment": "/**\n * Saves a file through the host's downloads capability (C.downloads), toasting on failure.\n *\n * @param {string} filename Suggested file name.\n * @param {*} data File contents as accepted by C.downloads.save.\n * @return {!Promise<boolean>} True when saved; false when unavailable, declined or failed.\n */"
+ },
+ {
+  "anchor": "const blobUrl = (id) => id ? \"/_blob/\" + id : \"\";",
+  "comment": "/**\n * Returns the URL that serves a stored asset blob.\n *\n * @param {?string} id Asset id.\n * @return {string} The /_blob/ URL, or an empty string when id is falsy.\n */"
+ },
+ {
+  "anchor": "function go(view, args = {}) { if (S.modal) { const m = S.modal; S.modal = null; m.res(m.kind === \"confirm\" ? false : null); } S.view = view; S.args = args; S.dialog = null; render(); window.scrollTo(0, 0); }",
+  "comment": "/**\n * Navigates to a view and re-renders from the top of the page.\n *\n * Cancels any open modal (resolving it as cancelled) and closes any dialog first.\n *\n * @param {string} view Key of VIEWS to show.\n * @param {!Object=} args Arguments for the view (default {}).\n */"
+ },
+ {
+  "anchor": "function render() {",
+  "comment": "/**\n * Renders the whole app into #app: top bar, current view, dialog, modal and displaced overlay.\n *\n * Then runs the view's AFTER hook, plays FLIP animations, focuses the modal's first field or OK button, and\n * restores the scroll position when S.keepScroll is set.\n */"
+ },
+ {
+  "anchor": "function rerender() { S.keepScroll = true; render(); }",
+  "comment": "/**\n * Re-renders the app while keeping the current scroll position.\n */"
+ },
+ {
+  "anchor": "function askConfirm(msg, okLabel = \"Confirm\", danger = false) { return new Promise((res) => { S.modal = { kind: \"confirm\", msg, okLabel, danger, res }; rerender(); }); }",
+  "comment": "/**\n * Shows an in-page confirmation modal, replacing window.confirm.\n *\n * @param {string} msg Message to show.\n * @param {string=} okLabel Confirm button label (default \"Confirm\").\n * @param {boolean=} danger True to style the confirm button as destructive.\n * @return {!Promise<boolean>} True when confirmed, false when cancelled.\n */"
+ },
+ {
+  "anchor": "function askText(title, fields, okLabel = \"Add\", validate = null) { return new Promise((res) => { S.modal = { kind: \"text\", title, fields, okLabel, validate, vals: Object.fromEntries(fields.map((f) => [f.id, f.value || \"\"])), res }; rerender(); }); }",
+  "comment": "/**\n * Shows an in-page modal with text fields, replacing window.prompt.\n *\n * @param {string} title Modal heading.\n * @param {!Array<!Object>} fields Field specs with id, label and optional value, type, placeholder, multiline.\n * @param {string=} okLabel OK button label (default \"Add\").\n * @param {?function(!Object): ?string=} validate Returns an error message to keep the modal open, or null.\n * @return {!Promise<?Object>} Field values keyed by id, or null when cancelled.\n */"
+ },
+ {
+  "anchor": "function modalHtml() {",
+  "comment": "/**\n * Returns the HTML for the current confirm or text modal (S.modal).\n *\n * @return {string} The modal markup, or an empty string when no modal is open.\n */"
+ },
+ {
+  "anchor": "function readModal() { const m = S.modal; if (m && m.vals) $$(\"[data-mfield]\").forEach((el) => { m.vals[el.dataset.mfield] = el.value; }); }",
+  "comment": "/**\n * Copies the current values of the modal's input fields into S.modal.vals.\n */"
+ },
+ {
+  "anchor": "ACT.mOk = () => { const m = S.modal; if (!m) return; if (m.kind === \"text\") { readModal(); const err = m.validate ? m.validate(m.vals) : null; if (err) { m.err = err; return rerender(); } } S.modal = null; rerender(); m.res(m.kind === \"confirm\" ? true : { ...m.vals }); };",
+  "comment": "/**\n * Handles the modal OK button.\n *\n * For a text modal, reads the fields and runs the validator, showing its error and keeping the modal open;\n * otherwise closes the modal and resolves it with true (confirm) or a copy of the values (text).\n */"
+ },
+ {
+  "anchor": "ACT.mCancel = () => { const m = S.modal; if (!m) return; S.modal = null; rerender(); m.res(m.kind === \"confirm\" ? false : null); };",
+  "comment": "/**\n * Handles the modal Cancel button: closes the modal and resolves it with false (confirm) or null (text).\n */"
+ },
+ {
+  "anchor": "function openDialog(fn) { S.dialog = fn; rerender(); }",
+  "comment": "/**\n * Opens a dialog overlay rendered by the given function.\n *\n * @param {function(): string} fn Returns the dialog's HTML on each render.\n */"
+ },
+ {
+  "anchor": "function closeDialog() { S.dialog = null; rerender(); }",
+  "comment": "/**\n * Closes the dialog overlay.\n */"
+ },
+ {
+  "anchor": "function topbar() {",
+  "comment": "/**\n * Returns the top bar HTML: wordmark home button plus, when signed in, the sound toggle (hidden on the host and\n * play views) and the display-name chip.\n *\n * @return {string} The header markup.\n */"
+ },
+ {
+  "anchor": "ACT.home = async () => { if (S.view === \"host\" && S.host && S.host.room && S.host.room.status !== \"ended\") { if (!(await askConfirm(\"Leave the host screen? The game keeps its state and you can resume from Home.\", \"Leave\"))) return; } leaveLive(); go(\"home\"); loadHome(); };",
+  "comment": "/**\n * Goes to the home view and reloads its data, leaving any live game.\n *\n * Asks for confirmation first when hosting a game that has not ended.\n */"
+ },
+ {
+  "anchor": "ACT.mute = () => { AUDIO.setMuted(!AUDIO.muted); if (AUDIO.muted) AUDIO.stopLoop(); else if (S.view === \"host\" && S.host && S.host.room && S.host.room.status === \"lobby\") AUDIO.startLoop(); rerender(); };",
+  "comment": "/**\n * Toggles sound, stopping the lobby music when muting and restarting it when unmuting in a host lobby.\n */"
+ },
+ {
+  "anchor": "ACT.close = () => closeDialog();",
+  "comment": "/**\n * Closes the open dialog.\n */"
+ },
+ {
+  "anchor": "ACT.rename = () => go(\"name\", { rename: true });",
+  "comment": "/**\n * Opens the display-name view in rename mode.\n */"
+ },
+ {
+  "anchor": "async function boot() {",
+  "comment": "/**\n * Starts the app: connects to the host's db and user services, checks sign-in and write access, loads the profile,\n * claims this device, then routes to the gate, name or home view.\n *\n * Optional capabilities (room, assets, sample, downloads) load in the background into C.\n *\n * @return {!Promise<void>} Resolves when boot routing finishes.\n */"
+ },
+ {
+  "anchor": "VIEWS.boot = () => `<main><div class=\"wrap\"><p class=\"muted\">Connecting to AlgoArena…</p></div></main>`;",
+  "comment": "/**\n * Renders the boot placeholder shown while connecting.\n *\n * @return {string} The view HTML.\n */"
+ },
+ {
+  "anchor": "VIEWS.gate = (a) => {",
+  "comment": "/**\n * Renders the sign-in gate with a message for the failure reason.\n *\n * @param {{reason: string, msg: (string|undefined)}} a Reason is noclaude, signin, viewonly or error.\n * @return {string} The view HTML with a Sign in or Try again button.\n */"
+ },
+ {
+  "anchor": "ACT.signIn = async (btn) => { btn.disabled = true; try { await window.claude.signIn(); location.reload(); } catch (e) { btn.disabled = false; toast(\"Sign-in didn't finish: \" + ((e && (e.code || e.message)) || e)); } };",
+  "comment": "/**\n * Starts sign-in through window.claude.signIn and reloads on success; re-enables the button and toasts on failure.\n *\n * @param {!Element} btn The clicked button.\n * @return {!Promise<void>}\n */"
+ },
+ {
+  "anchor": "ACT.signOut = async () => { leaveLive(); await window.claude.signOut(); location.reload(); };",
+  "comment": "/**\n * Leaves any live game, signs out and reloads the page.\n *\n * @return {!Promise<void>}\n */"
+ },
+ {
+  "anchor": "ACT.reload = () => location.reload();",
+  "comment": "/**\n * Reloads the page.\n */"
+ },
+ {
+  "anchor": "VIEWS.name = (a) => `<main><div class=\"wrap\" style=\"max-width:560px\"><h1>${a.rename ? \"Change your display name\" : \"Pick a display name\"}</h1>",
+  "comment": "/**\n * Renders the display-name form.\n *\n * @param {{rename: (boolean|undefined)}} a True when changing an existing name (adds a Cancel button).\n * @return {string} The view HTML.\n */"
+ },
+ {
+  "anchor": "AFTER.name = () => { const i = $(\"#dn\"); if (i) { i.focus(); if (!i.value && C.user) C.user.me().then((m) => { if (!i.value && m && m.name) i.value = m.name; }).catch(() => {}); } };",
+  "comment": "/**\n * Focuses the display-name input and, when it is empty, pre-fills it with the account name from C.user.me().\n */"
+ },
+ {
+  "anchor": "ACT.saveName = async () => {",
+  "comment": "/**\n * Saves the display name (at least 2 characters, whitespace collapsed) to the profile.\n *\n * Creates createdAt and a random salt on first save, updates the name on the player's public document when one\n * exists, then goes home and reloads home data.\n *\n * @return {!Promise<void>}\n */"
+ },
+ {
+  "anchor": "async function claimDevice() {",
+  "comment": "/**\n * Marks this device as the user's active device and watches for another device taking over.\n *\n * Records the previous device in S.tookOverFrom when it differs. When a later snapshot names another device,\n * sets S.displaced, leaves any live game while keeping its state, and re-renders.\n *\n * @return {!Promise<void>} Resolves once the claim is written and the listener attached.\n */"
+ }
+]

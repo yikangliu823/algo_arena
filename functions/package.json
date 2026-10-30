@@ -1,0 +1,20 @@
+{
+  "name": "algoarena-functions",
+  "private": true,
+  "type": "module",
+  "main": "index.js",
+  "engines": {
+    "node": "20"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.mjs",
+    "mutation": "stryker run"
+  },
+  "dependencies": {
+    "firebase-admin": "^12.1.0",
+    "firebase-functions": "^5.0.1"
+  },
+  "devDependencies": {
+    "@stryker-mutator/core": "^8.2.6"
+  }
+}

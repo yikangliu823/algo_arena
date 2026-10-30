@@ -1,0 +1,198 @@
+[
+ {
+  "anchor": "function myRank(r) { const rows = rankList(r.board, () => \"\"); const me = rows.find((x) => x.uid === S.uid); return { me, n: rows.length }; }",
+  "comment": "/**\n * Finds the signed-in player's row on the room leaderboard.\n *\n * @param {!Object} r The live room record; its `board` field is ranked with rankList().\n * @return {{me: (!Object|undefined), n: number}} The player's ranked row (undefined if absent) and the\n *     number of ranked players.\n */"
+ },
+ {
+  "anchor": "VIEWS.play = () => {",
+  "comment": "/**\n * Renders the participant's live game screen for the current room status.\n *\n * Builds the lobby, question (reading, answering, sealed, or timed out), reveal, or game-over view from\n * S.play; returns an empty string when no game is joined.\n *\n * @return {string} The view's HTML.\n */"
+ },
+ {
+  "anchor": "AFTER.play = () => { const p = S.play; if (!p) return; playTick(); runCountUps(); };",
+  "comment": "/**\n * Runs after the play view renders: advances the question timer and starts pending count-up animations.\n */"
+ },
+ {
+  "anchor": "async function loadSessionData(sid) {",
+  "comment": "/**\n * Loads one finished or in-progress session from the host's private data.\n *\n * Reads the session metadata, the per-question logs (sorted by q_index), the chunked question content, and\n * every stored AI report.\n *\n * @param {string} sid The session ID.\n * @return {!Promise<{sid: string, meta: !Object, logs: !Array<!Object>, qs: !Array<!Object>, ai: !Object}>}\n *     The session bundle used by the dashboard, export, and AI coach.\n * @throws {!Error} When the session metadata does not exist.\n */"
+ },
+ {
+  "anchor": "ACT.openSession = async (el) => { leaveLive(); S.sess = null; go(\"session\", { id: el.dataset.id }); S.sess = await loadSessionData(el.dataset.id); rerender(); importParticipantReports().catch(() => {}); importLateEvents(S.sess).catch(() => {}); resumePendingAi().catch(() => {}); };",
+  "comment": "/**\n * Opens the session dashboard for the clicked session.\n *\n * Leaves any live game, loads the session data, then in the background imports participant-generated\n * reports, late events, and resumes unfinished AI reports.\n *\n * @param {!Element} el The clicked element; `data-id` holds the session ID.\n * @return {!Promise<void>}\n */"
+ },
+ {
+  "anchor": "async function importLateEvents(X) {",
+  "comment": "/**\n * Copies participant events that arrived after the session snapshot into the session's lateEvents.\n *\n * Only events from public records still tagged with this session are taken; duplicates are skipped and the\n * list is capped at the last 4000 entries before it is written back.\n *\n * @param {?Object} X A session bundle from loadSessionData(); mutated in place.\n * @return {!Promise<void>}\n */"
+ },
+ {
+  "anchor": "function sessDerived(ctx) {",
+  "comment": "/**\n * Derives per-question statistics and the per-participant leaderboard from a session bundle.\n *\n * @param {!Object} ctx A session bundle from loadSessionData().\n * @return {{perQ: !Array<!Object>, people: !Array<!Object>}} Per-question counts, accuracy, answer\n *     distribution and response times, and participants sorted by score with rank, totals, median response\n *     time, and device-takeover count.\n */"
+ },
+ {
+  "anchor": "function rtChart(perQ) {",
+  "comment": "/**\n * Renders an SVG chart of accuracy bars and a median response-time line per question.\n *\n * @param {!Array<!Object>} perQ Per-question rows from sessDerived().\n * @return {string} SVG markup, or an empty string when there are no questions.\n */"
+ },
+ {
+  "anchor": "VIEWS.session = () => {",
+  "comment": "/**\n * Renders the host's session dashboard: summary, research export, per-question and participant tables,\n * AI report controls, takeover events, and session metadata.\n *\n * @return {string} The view's HTML, or a loading message while S.sess is not loaded.\n */"
+ },
+ {
+  "anchor": "ACT.tabTo = (el) => { go(\"home\", { tab: el.dataset.tab }); loadHome(); };",
+  "comment": "/**\n * Returns to the home view on the tab named by the clicked element and reloads home data.\n *\n * @param {!Element} el The clicked element; `data-tab` names the tab.\n */"
+ },
+ {
+  "anchor": "function aiCell(a, uid) {",
+  "comment": "/**\n * Renders the AI report cell of a participant row on the session dashboard.\n *\n * @param {?Object} a The participant's AI report record, or null if none exists.\n * @param {string} uid The participant's account ID, used by the View, download, and Retry buttons.\n * @return {string} HTML for the status: not started, view and download buttons, generating, or failed\n *     with a Retry button.\n */"
+ },
+ {
+  "anchor": "async function buildExport(sids, incNames) {",
+  "comment": "/**\n * Builds the research export tables for the given sessions.\n *\n * Loads each session (importing late events first) and flattens it into session, question, participant,\n * exposure, submission, event, and derived-metric rows. Participants appear by pseudonymous pid; the host\n * gets a pid hashed from the profile salt.\n *\n * @param {!Array<string>} sids Session IDs to export.\n * @param {boolean} incNames Whether to include participant display names.\n * @return {!Promise<!Object<string, !Array<!Object>>>} Row arrays keyed by table name.\n */"
+ },
+ {
+  "anchor": "function readme(incNames) {",
+  "comment": "/**\n * Builds the README.md placed in the research export zip.\n *\n * @param {boolean} incNames Whether display names were included, which changes the identity note.\n * @return {string} Markdown describing identity, files, timestamp semantics, and schema notes.\n */"
+ },
+ {
+  "anchor": "async function doExport(sids, fmt, incNames) {",
+  "comment": "/**\n * Builds and downloads a research export as one JSON file or as a zip of CSV files plus README.\n *\n * @param {!Array<string>} sids Session IDs to export.\n * @param {string} fmt \"json\" for a JSON file; any other value produces the CSV zip.\n * @param {boolean} incNames Whether to include participant display names.\n * @return {!Promise<*>} The result of saveFile().\n */"
+ },
+ {
+  "anchor": "ACT.exportOne = (el) => doExport([S.sess.sid], el.dataset.fmt, !!($(\"#incNames\") && $(\"#incNames\").checked));",
+  "comment": "/**\n * Exports the open session in the clicked button's format, honoring the Include display names checkbox.\n *\n * @param {!Element} el The clicked button; `data-fmt` holds the format.\n * @return {!Promise<*>} The result of doExport().\n */"
+ },
+ {
+  "anchor": "ACT.exportAll = async (el) => { const sids = (S.sessions || []).filter((s) => s.endAt).map((s) => s._id); if (!sids.length) return toast(\"No finished sessions to export.\"); toast(\"Preparing export…\"); await doExport(sids, el.dataset.fmt, false); };",
+  "comment": "/**\n * Exports every finished session in the clicked button's format, without display names.\n *\n * @param {!Element} el The clicked button; `data-fmt` holds the format.\n * @return {!Promise<void>}\n */"
+ },
+ {
+  "anchor": "const repId = (sid, uid) => (sid + \"_\" + uid).replace(/[^A-Za-z0-9_\\-.~:@+]/g, \"_\");",
+  "comment": "/**\n * Builds the document ID of a participant's sealed report, replacing unsafe characters with underscores.\n *\n * @param {string} sid The session ID.\n * @param {string} uid The participant's account ID.\n * @return {string} The report document ID.\n */"
+ },
+ {
+  "anchor": "function personalSnapshot(X, part) {",
+  "comment": "/**\n * Builds the evidence snapshot for one participant's AI learning report.\n *\n * @param {!Object} X A session bundle from loadSessionData().\n * @param {!Object} part The participant entry from the session metadata.\n * @return {!Object} Session details, totals (answered, correct, median response time, score, rank),\n *     per-topic counts, and one row per played question with the participant's answer and outcome.\n */"
+ },
+ {
+  "anchor": "function candidatesFor(snap) {",
+  "comment": "/**\n * Picks up to six library resources matching a snapshot's topics and missed questions.\n *\n * @param {!Object} snap A snapshot from personalSnapshot().\n * @return {!Array<{id: string, title: string, url: string, tags: *, match: number}>} Ranked candidates.\n */"
+ },
+ {
+  "anchor": "function parseJsonText(t) { const s = String(t || \"\").replace(/^\\s*```(?:json)?/i, \"\").replace(/```\\s*$/, \"\").trim(); const a = s.indexOf(\"{\"), b = s.lastIndexOf(\"}\"); return JSON.parse(a >= 0 ? s.slice(a, b + 1) : s); }",
+  "comment": "/**\n * Parses JSON from model output, stripping code fences and text outside the outermost braces.\n *\n * @param {*} t The raw model text.\n * @return {*} The parsed value.\n * @throws {!SyntaxError} When the text is not valid JSON.\n */"
+ },
+ {
+  "anchor": "async function sampleJson(prompt, sid, kind) {",
+  "comment": "/**\n * Sends a prompt to the AI service and parses the reply as JSON.\n *\n * Retries up to three times with growing back-off, but only on rate_limited errors.\n *\n * @param {string} prompt The prompt text.\n * @param {string} sid The session ID passed to the service.\n * @param {string} kind The report kind (\"personal\" or \"class\").\n * @return {!Promise<{json: *, model: ?string, tier: ?string}>} The parsed reply and the model used.\n * @throws {*} The service error, or the last rate-limit error after three attempts.\n */"
+ },
+ {
+  "anchor": "function personalPrompt(snap, cands, strict) {",
+  "comment": "/**\n * Builds the Learning Coach prompt for one participant's report.\n *\n * @param {!Object} snap A snapshot from personalSnapshot().\n * @param {!Array<!Object>} cands Candidate resources from candidatesFor().\n * @param {boolean} strict Unused by the current prompt text.\n * @return {string} The prompt.\n */"
+ },
+ {
+  "anchor": "function evidenceLines(snap) {",
+  "comment": "/**\n * Formats the observed-evidence bullet lines of a personal report.\n *\n * @param {!Object} snap A snapshot from personalSnapshot().\n * @return {!Array<string>} Markdown bullet lines.\n */"
+ },
+ {
+  "anchor": "function composePersonal(snap, j, res) {",
+  "comment": "/**\n * Composes a personal report as Markdown and trims it to at most 400 words.\n *\n * Trims list items first, then summary sentences, then truncates the summary to 25 words.\n *\n * @param {!Object} snap A snapshot from personalSnapshot().\n * @param {!Object} j The parsed model reply.\n * @param {!Array<!Object>} res The chosen resources to list.\n * @return {string} The report Markdown.\n */"
+ },
+ {
+  "anchor": "  const L = (a) => (Array.isArray(a) ? a : []).map((x) => String(x).trim()).filter(Boolean).slice(0, 3);",
+  "comment": "/**\n * Normalizes a model list field to at most three trimmed, non-empty strings.\n *\n * @param {*} a The field value; non-arrays become an empty list.\n * @return {!Array<string>} The cleaned items.\n */"
+ },
+ {
+  "anchor": "  const build = () => [`# Learning report: ${snap.display_name}`, `${snap.set_title}, ${snap.date}.`, \"## Observed evidence\", ...evidenceLines(snap),",
+  "comment": "/**\n * Assembles the report Markdown from the current (possibly trimmed) parts.\n *\n * @return {string} The report Markdown.\n */"
+ },
+ {
+  "anchor": "async function generatePersonal(snap, cands) {",
+  "comment": "/**\n * Generates one personal report with the AI service and composes it.\n *\n * @param {!Object} snap A snapshot from personalSnapshot().\n * @param {!Array<!Object>} cands Candidate resources from candidatesFor().\n * @return {!Promise<{md: string, json: *, model: ?string, tier: ?string, resources: !Array<string>,\n *     words: number}>} The report and its provenance.\n */"
+ },
+ {
+  "anchor": "  const pick = (j) => { const ids = (Array.isArray(j.resource_ids) ? j.resource_ids : []).map(String); let res = ids.map((id) => cands.find((c) => c.id === id)).filter(Boolean); res = [...new Map(res.map((x) => [x.id, x])).values()].slice(0, 3); if (!res.length) res = cands.slice(0, 1); return res; };",
+  "comment": "/**\n * Keeps up to three unique candidates the model chose, falling back to the top candidate.\n *\n * @param {!Object} j The parsed model reply.\n * @return {!Array<!Object>} The chosen resources.\n */"
+ },
+ {
+  "anchor": "async function deliverReport(sid, part, payload) {",
+  "comment": "/**\n * Encrypts a report payload with the participant's public key and writes it to the room's report\n * collection. Does nothing when the participant has no public key.\n *\n * @param {string} sid The session ID.\n * @param {!Object} part The participant entry from the session metadata.\n * @param {!Object} payload The report payload; its `status` is also stored in clear.\n * @return {!Promise<void>}\n */"
+ },
+ {
+  "anchor": "async function runPersonal(X, part) {",
+  "comment": "/**\n * Generates, stores, and delivers one participant's AI report.\n *\n * Records the report as generating, then ready or failed, in the session's AI collection (and in X.ai),\n * and delivers a sealed copy to the participant at each stage.\n *\n * @param {!Object} X A session bundle from loadSessionData(); X.ai is updated.\n * @param {!Object} part The participant entry from the session metadata.\n * @return {!Promise<void>}\n */"
+ },
+ {
+  "anchor": "function rerenderSess() { if (S.view === \"session\") rerender(); }",
+  "comment": "/**\n * Re-renders the page only when the session dashboard is showing.\n */"
+ },
+ {
+  "anchor": "async function startAiForSession(sid, only) {",
+  "comment": "/**\n * Generates AI reports for a session's participants, two at a time, then the class report.\n *\n * A full run is skipped when one is already running for the session; the class report runs only on a full\n * run with the AI service available.\n *\n * @param {string} sid The session ID.\n * @param {!Array<string>=} only Participant IDs to limit the run to.\n * @return {!Promise<void>}\n */"
+ },
+ {
+  "anchor": "async function resumePendingAi() {",
+  "comment": "/**\n * Restarts reports that are missing or stuck generating for more than two minutes on the open ended\n * session, and starts the class report if it has none.\n *\n * @return {!Promise<void>}\n */"
+ },
+ {
+  "anchor": "ACT.aiMissing = async () => { const X = S.sess; const todo = (X.meta.participants || []).filter((p) => !X.ai[p.uid] || X.ai[p.uid].status !== \"ready\").map((p) => p.uid); if (!todo.length) return toast(\"Every report is ready.\"); X.aiBusy = `Generating ${todo.length} report${todo.length > 1 ? \"s\" : \"\"}…`; rerender(); await startAiForSession(X.sid, todo); X.aiBusy = \"\"; rerender(); };",
+  "comment": "/**\n * Generates every participant report that is not ready, showing progress on the dashboard.\n *\n * @return {!Promise<void>}\n */"
+ },
+ {
+  "anchor": "ACT.aiRetry = async (el) => { await startAiForSession(S.sess.sid, [el.dataset.uid]); };",
+  "comment": "/**\n * Retries the AI report of the participant named by the clicked button.\n *\n * @param {!Element} el The clicked button; `data-uid` holds the participant ID.\n * @return {!Promise<void>}\n */"
+ },
+ {
+  "anchor": "ACT.aiDl = (el) => { const a = S.sess.ai[el.dataset.uid]; saveFile(safeName(`AlgoArena report - ${a.name} (${a.pid}).md`), a.md); };",
+  "comment": "/**\n * Downloads the clicked participant's AI report as a Markdown file.\n *\n * @param {!Element} el The clicked button; `data-uid` holds the participant ID.\n */"
+ },
+ {
+  "anchor": "function reportDialog(md, a) {",
+  "comment": "/**\n * Renders the dialog that shows an AI report with download and close buttons.\n *\n * @param {string} md The report Markdown.\n * @param {?Object} a The stored report record for the provenance line, or null to omit it.\n * @return {string} The dialog HTML.\n */"
+ },
+ {
+  "anchor": "async function runClass(X) {",
+  "comment": "/**\n * Generates and stores the class-level AI report from aggregated session evidence.\n *\n * Records the report as generating, then ready (with Markdown built from evidence and the model reply) or\n * failed, in X.ai._class and the session's AI collection.\n *\n * @param {!Object} X A session bundle from loadSessionData(); X.ai._class is updated.\n * @return {!Promise<void>}\n */"
+ },
+ {
+  "anchor": "ACT.aiClass = async () => { await runClass(S.sess); };",
+  "comment": "/**\n * Generates the class report for the open session.\n *\n * @return {!Promise<void>}\n */"
+ },
+ {
+  "anchor": "ACT.aiClassView = () => { const a = S.sess.ai._class; S.openMd = { md: a.md, name: `AlgoArena class report - ${S.sess.meta.code}.md` }; openDialog(() => reportDialog(a.md, a)); };",
+  "comment": "/**\n * Opens the class report of the open session in a dialog and remembers it for download.\n */"
+ },
+ {
+  "anchor": "ACT.aiBatch = async () => {",
+  "comment": "/**\n * Downloads a zip of every ready participant report, the class report if ready, and a README noting\n * what was missing.\n *\n * @return {!Promise<void>}\n */"
+ },
+ {
+  "anchor": "ACT.aiView = (el) => { const a = S.sess.ai[el.dataset.uid]; S.openMd = { md: a.md, name: `AlgoArena report - ${a.name} (${a.pid}).md` }; openDialog(() => reportDialog(a.md, a)); };",
+  "comment": "/**\n * Opens the clicked participant's AI report in a dialog and remembers it for download.\n *\n * @param {!Element} el The clicked button; `data-uid` holds the participant ID.\n */"
+ },
+ {
+  "anchor": "ACT.dlOpen = () => { if (S.openMd) saveFile(safeName(S.openMd.name), S.openMd.md); };",
+  "comment": "/**\n * Downloads the report currently shown in the dialog as a Markdown file.\n */"
+ },
+ {
+  "anchor": "async function importParticipantReports() {",
+  "comment": "/**\n * Imports reports that participants generated on their own devices into the open session.\n *\n * For each participant without a ready report, decrypts the sealed report in their public record (when it\n * belongs to this session) with the session's private key and stores it as a participant-generated report.\n *\n * @return {!Promise<void>}\n */"
+ },
+ {
+  "anchor": "function watchMyReport() {",
+  "comment": "/**\n * Subscribes to the participant's sealed report in the host's room and decrypts it on each change.\n *\n * Saves a ready report to the participant's joined-game record and re-renders the play view. Does nothing\n * without a game or when already subscribed.\n */"
+ },
+ {
+  "anchor": "function reportPanel() {",
+  "comment": "/**\n * Renders the participant's learning-report panel on the game-over screen.\n *\n * @return {string} HTML for the report, a generating message, a failure notice (with a Generate button\n *     when possible), or a waiting message.\n */"
+ },
+ {
+  "anchor": "ACT.myDl = () => { const p = S.play; const md = (p.selfReport && p.selfReport.md) || (p.repOpen && p.repOpen.md); if (md) saveFile(safeName(`AlgoArena report - ${S.profile.displayName}.md`), md); };",
+  "comment": "/**\n * Downloads the participant's own report (self-generated or received) as a Markdown file.\n */"
+ },
+ {
+  "anchor": "ACT.mySelfGen = async () => {",
+  "comment": "/**\n * Generates the participant's report on this device after the host's generation failed.\n *\n * Saves it to the joined-game record and publishes a copy sealed with the room's public key.\n *\n * @return {!Promise<void>}\n */"
+ },
+ {
+  "anchor": "ACT.myReport = async (el) => {",
+  "comment": "/**\n * Opens one of the participant's past live reports in a dialog.\n *\n * Uses the saved copy when present, otherwise decrypts the sealed report from the host's room.\n *\n * @param {!Element} el The clicked element; `data-host` and `data-sid` name the room host and session.\n * @return {!Promise<void>}\n */"
+ }
+]
