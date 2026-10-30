@@ -15,3 +15,8 @@ Updated 2026-10-29. One line per milestone, in order. A milestone is done only w
 | M9 | Research-ready: IRB approval, usability test with 5 students, pilot | data counts for the study | NOT DONE | university and instructor | you |
 
 Where we are: M5 done, M6 next (about 30 minutes, needs an iPhone and a second Google account).
+
+## Backlog (not scheduled)
+- AI question generation: not in the code, and excluded from v1.0 by the PRD. Before any code: decide whether to change
+  the PRD, the host quota for drafting questions, and human review before a draft enters a set. To be discussed in plan
+  mode (user, 2026-10-29).
