@@ -93,5 +93,6 @@ No High findings left that can be fixed and verified here. Remaining Medium and 
 - Findings not fixed (no product change this round): the e2e mock gives every auto-id document the id "x", so
   mock-only tests cannot catch overwrites of auto-id documents; the export's clock_offset_ms and clock_rtt_ms are
   always null, as its own field notes say.
-- CI: CI3_LOG
+- CI on `verify/firebase-round3` at 7e7ce47: all 5 jobs green on Node 22, including the new i6-emulator and
+  coach-wiring-emulator jobs: https://github.com/yikangliu823/algo_arena/actions/runs/41008562398.
 - Still NOT RUN: I4 timing, load, I5, I7, C5, C6, and the deploy of the coach function (needs Blaze and the secret).

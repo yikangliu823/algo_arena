@@ -13,3 +13,5 @@ test/e2e/shot_b_review.png
 test/rules/rules-coverage*.json
 verify/i6/www/
 functions/.secret*.local
+__pycache__/
+*.pyc
