@@ -55,17 +55,17 @@ export function getAuth() { auth.currentUser = userObj(); return auth; }
  * @return {function()} A no-op unsubscribe.
  */
 export function onAuthStateChanged(a, cb) { later(() => cb(userObj())); return () => {}; }
-/** @return {!Promise<null>} */
-export async function getRedirectResult() { return null; }
 /**
  * Signs in this frame's test user (the ?u= uid) without any popup.
  *
  * @param {{currentUser: ?Object}} a
  * @return {!Promise<{user: !Object}>}
  */
-export async function signInWithPopup(a) { await delay(); M.signedIn[ME] = true; a.currentUser = userObj(); return { user: a.currentUser }; }
-/** The mock signs in at once instead of redirecting. */
-export const signInWithRedirect = signInWithPopup;
+export async function signInWithPopup(a) {
+  await delay();
+  if (M.popupBlocked) throw Object.assign(new Error("Popup blocked"), { code: "auth/popup-blocked" });
+  M.signedIn[ME] = true; a.currentUser = userObj(); return { user: a.currentUser };
+}
 /**
  * @param {{currentUser: ?Object}} a
  * @return {!Promise<void>}

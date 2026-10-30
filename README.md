@@ -126,7 +126,10 @@ Anthropic Console and a budget alert in Google Cloud Billing.
 
 - `functions/index.js` and `functions/deps.js` are wired to firebase-functions and firebase-admin, which were not installable in the development sandbox. The logic in coach-core.js is unit-tested; the wiring is verified only once you run `npm test` and the functions emulator or a deploy.
 - Uploading images or PDFs to questions is off; references are links and notes.
-- Google sign-in uses a pop-up, falling back to a redirect when pop-ups are blocked. Test it on iPhone Safari before class.
+- Google sign-in is pop-up only. A redirect cannot complete on github.io: the sign-in helper is on firebaseapp.com and
+  Chrome 115+, Firefox 109+ and Safari 16.1+ block that third-party storage. When the pop-up is blocked the page asks
+  the user to allow pop-ups or to open the link in Safari or Chrome; links opened inside other apps (WeChat, Canvas
+  app) may not sign in. Test it on iPhone Safari before class.
 - The browser test checks the page against a JavaScript mirror of the rules, not the rules file; the rules file itself
   is tested on the emulator (`test/rules`).
 

@@ -35,7 +35,6 @@ async function init() {
   let fdb;
   try { fdb = fsM.initializeFirestore(app, { ignoreUndefinedProperties: true }); } catch { fdb = fsM.getFirestore(app); }
   Object.assign(F, { appM, authM, fsM, app, auth, fdb });
-  try { await authM.getRedirectResult(auth); } catch (e) { console.warn("Redirect sign-in did not complete:", e); }
   F.user = await new Promise((resolve) => { const stop = authM.onAuthStateChanged(auth, (u) => { if (stop) stop(); resolve(u); }); });
   if (F.user) estimateServerOffset().catch((e) => console.warn("Server clock estimate failed:", e));
 }
@@ -207,10 +206,11 @@ W.claude = {
     return null;
   },
   /**
-   * Falls back to a full-page redirect when popups are blocked or unsupported.
+   * Popup only: a redirect cannot complete on github.io, because the sign-in helper lives on firebaseapp.com and
+   * current browsers block that third-party storage (Firebase "redirect best practices").
    *
    * @return {!Promise<void>}
-   * @throws {*} Sign-in errors other than a blocked or unsupported popup.
+   * @throws {!Error} A plain-language message when the popup is blocked; other sign-in errors unchanged.
    */
   signIn: async () => {
     await boot();
@@ -218,8 +218,9 @@ W.claude = {
     try { await F.authM.signInWithPopup(F.auth, provider); }
     catch (e) {
       const code = e && e.code;
-      if (code === "auth/popup-blocked" || code === "auth/operation-not-supported-in-this-environment") { await F.authM.signInWithRedirect(F.auth, provider); return; }
-      throw e;
+      if (code !== "auth/popup-blocked" && code !== "auth/operation-not-supported-in-this-environment") throw e;
+      // No code on the new error: the page shows e.code in preference to e.message.
+      throw new Error("Pop-ups are blocked, so Google sign-in cannot open. Allow pop-ups for this site, or open the link in Safari or Chrome rather than inside another app.");
     }
   },
   /** @return {!Promise<void>} */

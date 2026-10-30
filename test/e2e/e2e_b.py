@@ -89,6 +89,12 @@ with sync_playwright() as pw:
     for F in (H, A, B):
         F.wait_for_selector('[data-act="signIn"]', timeout=8000)
     check("signed-out users see 'Sign in with Google'", "Google" in H.inner_text('[data-act="signIn"]'))
+    page.evaluate("() => { __FB.popupBlocked = true; }")
+    H.click('[data-act="signIn"]')
+    H.wait_for_selector(".toast", timeout=4000)
+    check("a blocked popup explains how to sign in instead of redirecting", "Pop-ups are blocked" in H.inner_text(".toast") and "signIn" in H.inner_html("body"), H.inner_text(".toast"))
+    page.evaluate("() => { __FB.popupBlocked = false; }")
+    H.wait_for_selector('[data-act="signIn"]:not([disabled])', timeout=4000)
     for F in (H, A, B):
         F.click('[data-act="signIn"]')
     H.wait_for_selector('[data-act="launch"][data-id="set1"]', timeout=10000)
