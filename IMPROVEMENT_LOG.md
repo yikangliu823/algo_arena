@@ -111,3 +111,9 @@ No High findings left that can be fixed and verified here. Remaining Medium and 
   warning: 3 failures with the old code, 0 with the fix.
 - Default reading time 10 s -> 5 s (user decision, 2026-10-29): build patch `default_read_5`; hosts can still set 0 to
   60 s. Sessions store their own readS, so exports of earlier sessions are unchanged. Mock e2e checks the default.
+- Question bank: 40 all-caps person names recased in 37 questions (user decision, 2026-10-29), for example DIJKSTRA to
+  Dijkstra, BELLMAN-FORD to Bellman-Ford; GRAHAM-SCAN became "Graham's scan" and EXTENDED-EUCLID "Extended Euclid".
+  Checked: every other character is unchanged; each changed question's provenance now says so. Research effect: the
+  question_key and session content_hash of these 37 questions differ from earlier sessions, so repeat-exposure counts
+  restart for them. No study sessions exist yet. CLRS procedure names without a person's name (INSERTION-SORT,
+  EXTRACT-MIN) and the emphasis words (NOT, FALSE, TRUE, TO, FRACTIONAL) and KNAPSACK, HALTING are unchanged.
