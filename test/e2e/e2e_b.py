@@ -105,7 +105,9 @@ with sync_playwright() as pw:
     check("B's server-clock offset estimate corrects its -5 s skew", 4500 <= offB <= 5500, str(offB))
 
     # room
-    H.click('[data-act="launch"][data-id="set1"]'); H.wait_for_selector("#l_r"); H.fill("#l_t", "15"); H.fill("#l_r", "3")
+    H.click('[data-act="launch"][data-id="set1"]'); H.wait_for_selector("#l_r")
+    check("the reading time defaults to 5 s", H.input_value("#l_r") == "5", H.input_value("#l_r"))
+    H.fill("#l_t", "15"); H.fill("#l_r", "3")
     H.click('[data-act="createRoom"]'); H.wait_for_selector(".bigcode", timeout=8000)
     code = H.inner_text(".bigcode").strip()
     for F in (A, B):

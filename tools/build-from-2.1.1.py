@@ -43,6 +43,10 @@ def block(start, end, new, label):
 
 
 rep('const APP = { version: "2.1.1-live",', 'const APP = { version: "3.0.0-b2",', "version")
+# 5 s default reading time (user decision, 2026-10-29); 2.1.1 used 10 s. Sessions record their own readS, so earlier
+# exports are unaffected.
+rep("const DEFAULT_READ = 10; // v2.1: seconds the question is visible, locked, before answers open",
+    "const DEFAULT_READ = 5; // seconds the question is visible, locked, before answers open", "default_read_5")
 rep('const ARTIFACT_URL = "https://claude.ai/artifact/GwnVWEECxnYh9afck4RpGA";',
     'const ARTIFACT_URL = location.origin + location.pathname; // route B: the page\'s own address (GitHub Pages)', "url")
 rep('<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>',

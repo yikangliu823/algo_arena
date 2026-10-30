@@ -109,3 +109,5 @@ No High findings left that can be fixed and verified here. Remaining Medium and 
   Fixed to `data/users/<uid>/clock`. Why the tests missed it: the mock accepted any path; it now refuses odd document
   paths like the SDK (and returns real auto ids). The I6 oracle (real SDK, emulator) now fails on a clock-estimate
   warning: 3 failures with the old code, 0 with the fix.
+- Default reading time 10 s -> 5 s (user decision, 2026-10-29): build patch `default_read_5`; hosts can still set 0 to
+  60 s. Sessions store their own readS, so exports of earlier sessions are unchanged. Mock e2e checks the default.
