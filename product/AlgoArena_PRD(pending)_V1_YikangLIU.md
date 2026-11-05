@@ -691,6 +691,52 @@ A first-time host should be able to complete the primary flow without reading do
 
 This is a product requirement, not merely a design preference.
 
+### <mark><u><em>16.6 Explore - UI (TBD)</em></u></mark>
+
+<mark><u><em>Exploration only. This direction was chosen from design previews on 2026-11-04 and is not part of the v1.0 baseline; the current interface stays unchanged until this section is approved and implemented.</em></u></mark>
+
+**Chosen direction:** "auspicious clouds" background shown as is, porcelain answer cards, soft-shadow controls (preview Style 2), and plain text with no frames.
+
+Assets:
+
+- Background image: `product/design/ui-explore/background-clouds.webp` (blue and white auspicious clouds with gold outlines on cream marble; 457 KB source).
+- Reference preview: `product/design/ui-explore/preview-style-2.png` (host lobby and participant answer screen).
+
+**Scope:** the game screens (the "stage": host lobby, question, reveal, leaderboard and results, and the participant's screens). Home, set editor and the built-in bank keep their current look.
+
+**Background**
+
+- The image replaces the navy background with the white grid lines. It is shown as is, centred and scaled to cover the screen, with no dark overlay.
+- For readability, a cream mist with no visible edge sits over the image: a band along the top (about 92% opacity at the top edge, fading to none at 120 px) and an ellipse behind the central content (about 84% at the centre, fading to none at about three quarters of the way to the edge). The clouds stay fully visible at the sides and corners.
+- The image is delivered optimised to at most 300 KB and cached.
+
+**Text**
+
+- Labels, the join line ("Scan the code, sign in and enter …"), the ready count, player names and hints are plain text: no pills, frames, borders or background boxes.
+- Text colour is dark navy `#0E1433`, with a soft cream glow behind the letters (a blurred text shadow with no visible edge). Status labels in the top bar are separated by "·".
+
+**Answer options (porcelain)**
+
+- All four options use the same cream porcelain surface `#FCF8EF` with navy text (contrast 16.7:1).
+- Options are told apart by a round icon in the option colour, keeping the current shapes: A lapis `#1E4FA8`, B turquoise `#0F7A7A`, C cinnabar `#9E2F28`, D ochre gold `#8C6418`.
+- After the reveal, the correct option keeps its colour; the others are shown opaque and desaturated, never transparent, so the clouds do not show through the text.
+
+**Controls (soft shadow, preview Style 2)**
+
+- No borders, no gloss and no raised edges. Depth comes from soft shadows only, for example `0 12px 32px rgba(14,20,51,.20), 0 2px 6px rgba(14,20,51,.08)`.
+- Answer cards and the question card have large rounded corners (about 22 to 24 px); option icons are circles.
+- The selected option gets a 3 px cobalt ring, lifts slightly (about 3 px) with a stronger shadow, and shows a navy "Your answer" badge.
+- Buttons are pills. The primary button (for example "Start game") is cobalt (`#2E66CC` to `#1E4FA8`) with white text (7.7:1) and a cobalt shadow; secondary buttons ("Sound on", "End game") are cream `#FCF8EF` with blue text `#163B82`.
+- The question card and the QR code sit on cream with the same soft shadow and no border. The timer ring is cobalt on a cream disc.
+
+**Acceptance**
+
+- Every text element has at least 4.5:1 contrast against what is directly behind it, checked on the actual screens.
+- A projected game is readable from the back row of the classroom, including the hint line and the top-bar labels.
+- No functional change: layout, behaviour, timing and data are unaffected.
+
+**Alternatives explored and not chosen (2026-11-04):** dark overlays over the image (85%, 60%, 25% with a panel), a light rice-paper panel and a glaze band; enamel answer colours in cloisonné, blue scale, gold and blue, and soft glaze; flat, frosted glass, outline and colour-block button styles; and pill frames around plain text, rejected as abrupt.
+
 ## 17 Primary User Flows
 
 ### 17.1 Solo Practice
